@@ -1,0 +1,51 @@
+'''
+# feedback_module.py
+import prompts
+
+
+def construct_feedback_prompt(model_draft_json: str, failure_reason: str) -> str:
+    """
+    当质量检查失败时，构建反馈提示词。
+    (基于论文 IV.D 节 和 表IV )
+    """
+    print("[Module 4] Constructing feedback prompt...")
+
+    # 从 prompts.py 加载表IV的提示词模板
+    prompt_template = prompts.GET_FEEDBACK_PROMPT_TEMPLATE()
+
+    # 从 failure_reason 中粗略提取属性和反例
+    violated_property = "Unknown"
+    counterexample = "No counterexample generated."
+
+    if "Counterexample:" in failure_reason:
+        parts = failure_reason.split("Counterexample:", 1)
+        violated_property = parts[0].strip()  # 取第一部分并去除首尾空格
+        counterexample = parts[1].strip()  # 取第二部分并去除首尾空格
+    else:
+        violated_property = failure_reason.strip()
+
+    '''
+
+    '''
+    feedback_prompt = prompt_template.format(
+        last_model_draft=model_draft_json,
+        violated_property=violated_property,
+        counterexample=counterexample
+    )
+    '''
+
+    '''
+    # === [已修复] ===
+    # 使用 .replace() 来安全地注入内容，防止 JSON 中的 {} 导致 KeyError
+
+    feedback_prompt = prompt_template.replace(
+        "{last_model_draft}", model_draft_json
+    ).replace(
+        "{violated_property}", violated_property
+    ).replace(
+        "{counterexample}", counterexample
+    )
+
+    return feedback_prompt
+
+'''

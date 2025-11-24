@@ -1,0 +1,75 @@
+### Corrected and Summarized Key Information for Mi Robot Vacuum:
+
+#### **Device Overview**  
+- **Model**: Mi Robot Vacuum (SDJORO1RR)  
+- **Type**: Smart path-planning vacuum with LDS laser navigation, multi-sensor fusion, and auto-recharging.  
+- **Control**: Manual buttons or via "Mi Home" app (Wi-Fi enabled).  
+
+---  
+
+#### **States & Indicators**  
+1. **Power/Status Ring Light**:  
+   - **White (solid)**: >50% battery.  
+   - **Yellow (solid)**: 20–50% battery.  
+   - **Red (solid)**: <20% battery.  
+   - **Breathing white**: Charging/starting.  
+   - **Red fast blink**: Error (see troubleshooting).  
+
+2. **Wi-Fi LED**:  
+   - **Off**: Inactive.  
+   - **Slow blink**: Waiting to connect.  
+   - **Fast blink**: Connecting.  
+   - **Solid**: Connected.  
+
+---  
+
+#### **Operations & Behaviors**  
+1. **Basic Controls**:  
+   - **Power**: Long-press (○) to turn on/off.  
+   - **Start/Pause**: Short-press (○); any key pauses.  
+   - **Auto-Clean**: Short-press (○) → scans room, maps zones, cleans edges first, then Z-pattern.  
+   - **Spot Clean**: Long-press (🔘) → cleans 1.5m² area, returns to start.  
+   - **Return to Dock**: Short-press (🔘) during pause.  
+
+2. **Charging**:  
+   - **Auto**: Returns to dock when battery <20% or post-cleaning.  
+   - **Manual**: Pause → short-press (🔘).  
+
+3. **Modes (via App)**:  
+   - **Cleaning Modes**: Quiet/Standard/Strong.  
+   - **Do Not Disturb**: Mutes voice/light (22:00–08:00 default).  
+
+---  
+
+#### **Maintenance**  
+- **Weekly**: Clean main brush, side brush, dustbin, filter.  
+- **Monthly**: Wipe sensors (cliff, wall-follow), wheels, charging contacts.  
+- **Replacements**:  
+  - Main brush: 6–12 months.  
+  - Side brush: 3–6 months.  
+  - Filter: 3 months.  
+
+---  
+
+#### **Error Handling**  
+- **Common Issues**:  
+  - **Low battery**: Charge before use.  
+  - **Stuck brush**: Remove entangled hair/debris.  
+  - **Dock misalignment**: Ensure 0.5m clearance on sides, 1m front.  
+- **Reset Options**:  
+  - **Wi-Fi**: Hold (○ + 🔘) until voice prompt.  
+  - **System**: Press reset pin → clears schedules/Wi-Fi settings.  
+
+---  
+
+#### **Safety Notes**  
+- Avoid wet areas, cliffs (e.g., stairs), or loose cables.  
+- Do not use on dark carpets or near strong magnets.  
+- Keep children/pets away during operation.  
+
+---  
+
+**Manufacturer**: Beijing Roborock Technology Co., Ltd. (Xiaomi ecosystem)  
+**Support**: 400-100-5678 or [Mi Service](http://www.mi.com/service).  
+
+*(Summary optimized for end-user clarity, omitting redundant OCR errors.)*

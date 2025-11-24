@@ -1,0 +1,123 @@
+{
+    "states": [
+        "off",
+        "on",
+        "sleep",
+        "hibernation",
+        "cleaning",
+        "spot_cleaning",
+        "paused",
+        "docking",
+        "charging",
+        "error"
+    ],
+    "inputs": {
+        "long_press_power": "Long-press (○) button",
+        "short_press_power": "Short-press (○) button",
+        "long_press_home": "Long-press (⬤) button",
+        "short_press_home": "Short-press (⬤) button",
+        "inactivity_timeout": "10 mins inactivity",
+        "hibernation_timeout": "12 hrs sleep",
+        "low_battery": "Battery <20%",
+        "error_occurred": "Red Fast Flash",
+        "error_resolved": "Auto-Recovery",
+        "battery_charged": "Breathing White stops"
+    },
+    "outputs": {
+        "ring_light_white": "Battery >50%",
+        "ring_light_yellow": "Battery 20%-50%",
+        "ring_light_red": "Battery <20%",
+        "ring_light_breathing_white": "Charging/Starting",
+        "ring_light_red_fast_flash": "Error",
+        "wifi_off": "Inactive",
+        "wifi_slow_flash": "Awaiting connection",
+        "wifi_fast_flash": "Connecting",
+        "wifi_solid": "Connected"
+    },
+    "transitions": [
+        {
+            "from": "off",
+            "input": "long_press_power",
+            "to": "on",
+            "output": "ring_light_breathing_white"
+        },
+        {
+            "from": "on",
+            "input": "long_press_power",
+            "to": "off",
+            "output": "ring_light_off"
+        },
+        {
+            "from": "on",
+            "input": "inactivity_timeout",
+            "to": "sleep",
+            "output": "ring_light_off"
+        },
+        {
+            "from": "sleep",
+            "input": "any_button",
+            "to": "on",
+            "output": "ring_light_white"
+        },
+        {
+            "from": "sleep",
+            "input": "hibernation_timeout",
+            "to": "hibernation",
+            "output": "ring_light_off"
+        },
+        {
+            "from": "on",
+            "input": "short_press_power",
+            "to": "cleaning",
+            "output": "ring_light_white"
+        },
+        {
+            "from": "on",
+            "input": "long_press_home",
+            "to": "spot_cleaning",
+            "output": "ring_light_white"
+        },
+        {
+            "from": "cleaning",
+            "input": "any_button",
+            "to": "paused",
+            "output": "ring_light_yellow"
+        },
+        {
+            "from": "paused",
+            "input": "short_press_power",
+            "to": "cleaning",
+            "output": "ring_light_white"
+        },
+        {
+            "from": "paused",
+            "input": "short_press_home",
+            "to": "docking",
+            "output": "ring_light_breathing_white"
+        },
+        {
+            "from": "cleaning",
+            "input": "low_battery",
+            "to": "docking",
+            "output": "ring_light_red"
+        },
+        {
+            "from": "docking",
+            "input": "battery_charged",
+            "to": "on",
+            "output": "ring_light_white"
+        },
+        {
+            "from": "*",
+            "input": "error_occurred",
+            "to": "error",
+            "output": "ring_light_red_fast_flash"
+        },
+        {
+            "from": "error",
+            "input": "error_resolved",
+            "to": "on",
+            "output": "ring_light_white"
+        }
+    ]
+}
