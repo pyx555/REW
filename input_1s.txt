@@ -1,9 +1,3 @@
-Solve the given task. The following is the OCR recognition result of an smart home device's manual, which may have typos, missing words, extra words or symbols, etc. You need to summarize the key information of this device based on it and common sense, for end users to further understand its behavior.
-
-You should answer the result directly.
-
-The OCR recognition result of the manual is as follows:
-
 米家扫地机器人使用说明书
 使用产品前请仔细阅读本使用说明书，并妥善保存
 mIC

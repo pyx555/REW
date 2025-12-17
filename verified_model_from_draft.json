@@ -1,0 +1,301 @@
+{
+    "states": [
+        "standby",
+        "cleaning",
+        "charging",
+        "error",
+        "sleep"
+    ],
+    "inputs": [
+        "short_press_power",
+        "long_press_power",
+        "short_press_home",
+        "long_press_home",
+        "low_battery",
+        "charging_complete",
+        "error_occurred",
+        "error_resolved",
+        "timeout"
+    ],
+    "outputs": [
+        "white_light",
+        "yellow_light",
+        "red_light",
+        "breathing_light",
+        "fast_red_blink",
+        "none"
+    ],
+    "transitions": [
+        {
+            "from": "standby",
+            "to": "cleaning",
+            "input": "short_press_power",
+            "output": "white_light"
+        },
+        {
+            "from": "standby",
+            "to": "standby",
+            "input": "long_press_power",
+            "output": "none"
+        },
+        {
+            "from": "standby",
+            "to": "charging",
+            "input": "short_press_home",
+            "output": "breathing_light"
+        },
+        {
+            "from": "standby",
+            "to": "cleaning",
+            "input": "long_press_home",
+            "output": "white_light"
+        },
+        {
+            "from": "standby",
+            "to": "standby",
+            "input": "low_battery",
+            "output": "yellow_light"
+        },
+        {
+            "from": "standby",
+            "to": "standby",
+            "input": "charging_complete",
+            "output": "none"
+        },
+        {
+            "from": "standby",
+            "to": "error",
+            "input": "error_occurred",
+            "output": "fast_red_blink"
+        },
+        {
+            "from": "standby",
+            "to": "standby",
+            "input": "error_resolved",
+            "output": "none"
+        },
+        {
+            "from": "standby",
+            "to": "sleep",
+            "input": "timeout",
+            "output": "none"
+        },
+        {
+            "from": "cleaning",
+            "to": "standby",
+            "input": "short_press_power",
+            "output": "white_light"
+        },
+        {
+            "from": "cleaning",
+            "to": "standby",
+            "input": "long_press_power",
+            "output": "none"
+        },
+        {
+            "from": "cleaning",
+            "to": "charging",
+            "input": "short_press_home",
+            "output": "breathing_light"
+        },
+        {
+            "from": "cleaning",
+            "to": "cleaning",
+            "input": "long_press_home",
+            "output": "white_light"
+        },
+        {
+            "from": "cleaning",
+            "to": "charging",
+            "input": "low_battery",
+            "output": "breathing_light"
+        },
+        {
+            "from": "cleaning",
+            "to": "cleaning",
+            "input": "charging_complete",
+            "output": "none"
+        },
+        {
+            "from": "cleaning",
+            "to": "error",
+            "input": "error_occurred",
+            "output": "fast_red_blink"
+        },
+        {
+            "from": "cleaning",
+            "to": "cleaning",
+            "input": "error_resolved",
+            "output": "white_light"
+        },
+        {
+            "from": "cleaning",
+            "to": "sleep",
+            "input": "timeout",
+            "output": "none"
+        },
+        {
+            "from": "charging",
+            "to": "cleaning",
+            "input": "short_press_power",
+            "output": "white_light"
+        },
+        {
+            "from": "charging",
+            "to": "standby",
+            "input": "long_press_power",
+            "output": "none"
+        },
+        {
+            "from": "charging",
+            "to": "charging",
+            "input": "short_press_home",
+            "output": "breathing_light"
+        },
+        {
+            "from": "charging",
+            "to": "cleaning",
+            "input": "long_press_home",
+            "output": "white_light"
+        },
+        {
+            "from": "charging",
+            "to": "charging",
+            "input": "low_battery",
+            "output": "breathing_light"
+        },
+        {
+            "from": "charging",
+            "to": "standby",
+            "input": "charging_complete",
+            "output": "white_light"
+        },
+        {
+            "from": "charging",
+            "to": "error",
+            "input": "error_occurred",
+            "output": "fast_red_blink"
+        },
+        {
+            "from": "charging",
+            "to": "charging",
+            "input": "error_resolved",
+            "output": "breathing_light"
+        },
+        {
+            "from": "charging",
+            "to": "sleep",
+            "input": "timeout",
+            "output": "none"
+        },
+        {
+            "from": "error",
+            "to": "error",
+            "input": "short_press_power",
+            "output": "fast_red_blink"
+        },
+        {
+            "from": "error",
+            "to": "standby",
+            "input": "long_press_power",
+            "output": "white_light"
+        },
+        {
+            "from": "error",
+            "to": "error",
+            "input": "short_press_home",
+            "output": "fast_red_blink"
+        },
+        {
+            "from": "error",
+            "to": "error",
+            "input": "long_press_home",
+            "output": "fast_red_blink"
+        },
+        {
+            "from": "error",
+            "to": "error",
+            "input": "low_battery",
+            "output": "fast_red_blink"
+        },
+        {
+            "from": "error",
+            "to": "error",
+            "input": "charging_complete",
+            "output": "fast_red_blink"
+        },
+        {
+            "from": "error",
+            "to": "error",
+            "input": "error_occurred",
+            "output": "fast_red_blink"
+        },
+        {
+            "from": "error",
+            "to": "standby",
+            "input": "error_resolved",
+            "output": "white_light"
+        },
+        {
+            "from": "error",
+            "to": "sleep",
+            "input": "timeout",
+            "output": "none"
+        },
+        {
+            "from": "sleep",
+            "to": "standby",
+            "input": "short_press_power",
+            "output": "white_light"
+        },
+        {
+            "from": "sleep",
+            "to": "standby",
+            "input": "long_press_power",
+            "output": "none"
+        },
+        {
+            "from": "sleep",
+            "to": "charging",
+            "input": "short_press_home",
+            "output": "breathing_light"
+        },
+        {
+            "from": "sleep",
+            "to": "cleaning",
+            "input": "long_press_home",
+            "output": "white_light"
+        },
+        {
+            "from": "sleep",
+            "to": "sleep",
+            "input": "low_battery",
+            "output": "none"
+        },
+        {
+            "from": "sleep",
+            "to": "sleep",
+            "input": "charging_complete",
+            "output": "none"
+        },
+        {
+            "from": "sleep",
+            "to": "error",
+            "input": "error_occurred",
+            "output": "fast_red_blink"
+        },
+        {
+            "from": "sleep",
+            "to": "sleep",
+            "input": "error_resolved",
+            "output": "none"
+        },
+        {
+            "from": "sleep",
+            "to": "sleep",
+            "input": "timeout",
+            "output": "none"
+        }
+    ],
+    "initial_state": "standby"
+}

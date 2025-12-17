@@ -1,90 +1,15 @@
-"""
-# llm_api_client.py
-import openai
-import config
-from openai import OpenAI
-
-# 设置 API 密钥
-# (如果您在使用 DeepSeek, 请确保 base_url 也已设置)
-client = OpenAI(
-    api_key=config.API_KEY,
-    # 必须改为硅基流动的地址
-    base_url="https://api.siliconflow.cn/v1"
-)
-
-
-def call_llm(prompt_text: str, model: str = config.LLM_MODEL_NAME) -> str:
-
-    print(f"\n--- [LLM Call] Sending prompt to {model} ---")
-    # print(prompt_text) # (取消注释以调试完整的提示词)
-    print("--- [LLM Call] Waiting for response... ---")
-
-    try:
-        response = client.chat.completions.create(
-            model=model,
-            # === 这是已修复的部分 ===
-            messages=[
-                {"role": "user", "content": prompt_text}
-            ],
-            # ========================
-            temperature=0.2  # 降低随机性以获取可复现的模型
-        )
-        content = response.choices[0].message.content
-        print("--- [LLM Call] Response received ---")
-        return content
-    except Exception as e:
-        print(f"Error calling LLM API: {e}")
-        return f"Error: LLM API call failed. {e}"
-"""
-
-
-"""
-# llm_api_client.py
-import openai
-import config
-
-# === 设置 API 密钥和地址 (旧版写法) ===
-openai.api_key = config.API_KEY
-# 重要：旧版本 SDK 使用 'api_base' 而不是 'base_url'
-openai.api_base = "https://api.siliconflow.cn/v1"
-
-
-def call_llm(prompt_text: str, model: str = config.LLM_MODEL_NAME) -> str:
-
-    print(f"\n--- [LLM Call] Sending prompt to {model} ---")
-    # print(prompt_text) # (取消注释以调试完整的提示词)
-    print("--- [LLM Call] Waiting for response... ---")
-
-    try:
-        # === 旧版调用方式 ===
-        response = openai.ChatCompletion.create(
-            model=model,
-            messages=[
-                {"role": "user", "content": prompt_text}
-            ],
-            temperature=0.2  # 降低随机性以获取可复现的模型
-        )
-
-        # 获取内容。如果运行报错，可以尝试注释掉下面一行，改用字典访问方式：
-        # content = response['choices'][0]['message']['content']
-        content = response.choices[0].message.content
-
-        print("--- [LLM Call] Response received ---")
-        return content
-    except Exception as e:
-        print(f"Error calling LLM API: {e}")
-        return f"Error: LLM API call failed. {e}"
-    
-"""
 # llm_api_client.py
 import requests
 import json
 import config
+import time # <-- 确保添加此导入
 
+# ... (旧版的 OpenAI SDK 或旧版的 requests 实现请保留在文件中，仅修改第三部分)
 
 def call_llm(prompt_text: str, model: str = config.LLM_MODEL_NAME) -> str:
     """
     使用 requests 库直接调用 LLM API (兼容所有 Python 版本)。
+    (已修复：添加了对 429 错误的代码重试机制，并将超时增加到 300 秒)
     """
     print(f"\n--- [LLM Call] Sending prompt to {model} ---")
     print("--- [LLM Call] Waiting for response... ---")
@@ -106,21 +31,52 @@ def call_llm(prompt_text: str, model: str = config.LLM_MODEL_NAME) -> str:
         "stream": False
     }
 
-    try:
-        response = requests.post(url, headers=headers, data=json.dumps(payload), timeout=120)
+    MAX_RETRIES = 5  # 我们最多重试 5 次
 
-        # 检查 HTTP 响应状态码
-        if response.status_code == 200:
-            result = response.json()
-            # 解析返回的 JSON 结构
-            content = result['choices'][0]['message']['content']
-            print("--- [LLM Call] Response received ---")
-            return content
-        else:
-            print(f"API Error: Status Code {response.status_code}")
-            print(f"Response Body: {response.text}")
-            return f"Error: API returned status code {response.status_code}"
+    for attempt in range(MAX_RETRIES):
+        try:
+            # 修正: 增加超时时间到 300 秒（5 分钟）
+            response = requests.post(url, headers=headers, data=json.dumps(payload), timeout=300)
 
-    except Exception as e:
-        print(f"Error calling LLM API: {e}")
-        return f"Error: LLM API call failed. {e}"
+            # 检查 HTTP 响应状态码
+            if response.status_code == 200:
+                result = response.json()
+                content = result['choices'][0]['message']['content']
+                print("--- [LLM Call] Response received ---")
+                return content
+
+            elif response.status_code == 429:
+                # 处理限速错误 (429)
+                print(f"API Warning: Status Code 429 - Rate limited. Retrying in {2**attempt} seconds...")
+                if attempt < MAX_RETRIES - 1:
+                    # 指数退避：第一次等待 1s, 第二次 2s, 第三次 4s, 以此类推
+                    time.sleep(2**attempt)
+                    continue # 继续下一次循环重试
+                else:
+                    # 最后一次尝试失败，直接退出
+                    print("API Error: Status Code 429. Max retries reached.")
+                    return f"Error: API returned status code 429 after {MAX_RETRIES} retries."
+
+            else:
+                # 处理其他非 200/429 的错误
+                print(f"API Error: Status Code {response.status_code}")
+                print(f"Response Body: {response.text}")
+                return f"Error: API returned status code {response.status_code}"
+
+        except requests.exceptions.ReadTimeout:
+            # 处理 Read timed out 错误 (之前遇到的问题)
+            print("API Warning: Read timed out. Retrying in 5 seconds...")
+            if attempt < MAX_RETRIES - 1:
+                time.sleep(5)
+                continue
+            else:
+                print("API Error: Read timed out. Max retries reached.")
+                return "Error: LLM API call failed due to persistent read timeout."
+
+        except Exception as e:
+            # 处理其他网络/连接错误
+            print(f"Error calling LLM API: {e}")
+            return f"Error: LLM API call failed. {e}"
+
+    # 如果循环正常退出（不应该发生，但作为安全措施）
+    return "Error: LLM API call failed unexpectedly."

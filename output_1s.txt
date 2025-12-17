@@ -1,75 +1,88 @@
-### Corrected and Summarized Key Information for Mi Robot Vacuum:
+```markdown
+### Corrected and Summarized Key Information:
 
-#### **Device Overview**  
-- **Model**: Mi Robot Vacuum (SDJORO1RR)  
-- **Type**: Smart path-planning vacuum with LDS laser navigation, multi-sensor fusion, and auto-recharging.  
-- **Control**: Manual buttons or via "Mi Home" app (Wi-Fi enabled).  
+#### **Device Name**:
+米家扫地机器人 (Model: SDJORO1RR)
 
----  
+#### **Key Features**:
+- Laser-based path planning with real-time room mapping  
+- Multi-sensor navigation (laser, ultrasonic, cliff, wall sensors)  
+- Auto-recharge and resume mid-clean  
+- App control (Mi Home app) for remote scheduling/monitoring  
+- Three cleaning modes (Quiet/Standard/Max)  
+- Virtual wall support (optional accessory)  
+- Self-diagnosis and error alerts  
 
-#### **States & Indicators**  
-1. **Power/Status Ring Light**:  
-   - **White (solid)**: >50% battery.  
-   - **Yellow (solid)**: 20–50% battery.  
-   - **Red (solid)**: <20% battery.  
-   - **Breathing white**: Charging/starting.  
-   - **Red fast blink**: Error (see troubleshooting).  
+---
+### **States & Indicators**:
 
-2. **Wi-Fi LED**:  
-   - **Off**: Inactive.  
-   - **Slow blink**: Waiting to connect.  
-   - **Fast blink**: Connecting.  
-   - **Solid**: Connected.  
+1.  **Ring Light Colors**:
+    - **White**: Battery >50%  
+    - **Yellow**: Battery 20%-50%  
+    - **Red**: Battery <20%  
+    - **Breathing White**: Charging/Starting  
+    - **Red Fast Flash**: Error state  
 
----  
+2.  **Wi-Fi LED**:
+    - **Off**: Wi-Fi inactive  
+    - **Slow Flash**: Waiting for connection  
+    - **Fast Flash**: Connecting  
+    - **Solid**: Connected  
 
-#### **Operations & Behaviors**  
-1. **Basic Controls**:  
-   - **Power**: Long-press (○) to turn on/off.  
-   - **Start/Pause**: Short-press (○); any key pauses.  
-   - **Auto-Clean**: Short-press (○) → scans room, maps zones, cleans edges first, then Z-pattern.  
-   - **Spot Clean**: Long-press (🔘) → cleans 1.5m² area, returns to start.  
-   - **Return to Dock**: Short-press (🔘) during pause.  
+---
+### **Operations & Behaviors**:
 
-2. **Charging**:  
-   - **Auto**: Returns to dock when battery <20% or post-cleaning.  
-   - **Manual**: Pause → short-press (🔘).  
+#### **Basic Controls**:
+- **Power**: Long-press (○) to turn on/off  
+- **Start/Pause**: Short-press (○)  
+- **Return to Dock**: Short-press (↖)  
+- **Spot Clean**: Long-press (↖) (1.5m² area)  
 
-3. **Modes (via App)**:  
-   - **Cleaning Modes**: Quiet/Standard/Strong.  
-   - **Do Not Disturb**: Mutes voice/light (22:00–08:00 default).  
+#### **Modes**:
+1. **Full Clean**: Maps room → partitions → Z-shaped path  
+2. **Spot Clean**: Focused 1.5m² square  
+3. **Scheduled Clean**: Via app  
+4. **Quiet/Standard/Max**: Adjust suction power  
 
----  
+#### **Auto Behaviors**:
+- Auto-dock when battery <20%  
+- Resume cleaning after recharge  
+- Auto-sleep after 10min inactivity  
+- Virtual wall avoidance  
 
-#### **Maintenance**  
-- **Weekly**: Clean main brush, side brush, dustbin, filter.  
-- **Monthly**: Wipe sensors (cliff, wall-follow), wheels, charging contacts.  
-- **Replacements**:  
-  - Main brush: 6–12 months.  
-  - Side brush: 3–6 months.  
-  - Filter: 3 months.  
+---
+### **Maintenance**:
+- **Weekly**: Clean main brush, side brush, dustbin, filter  
+- **Monthly**: Clean wheels, sensors, charging contacts  
+- **3-6 Months**: Replace side brush  
+- **6-12 Months**: Replace main brush  
+- **3 Months**: Replace filter  
 
----  
+---
+### **Troubleshooting**:
+| **Error** | **Solution** |  
+|-----------|--------------|  
+| Laser blocked | Clear obstruction |  
+| Wheel stuck | Remove debris |  
+| Dustbin missing | Reinstall properly |  
+| Low battery | Recharge |  
+| Wi-Fi issues | Reset via (○ + ↖) |  
+| System freeze | Press reset button |  
 
-#### **Error Handling**  
-- **Common Issues**:  
-  - **Low battery**: Charge before use.  
-  - **Stuck brush**: Remove entangled hair/debris.  
-  - **Dock misalignment**: Ensure 0.5m clearance on sides, 1m front.  
-- **Reset Options**:  
-  - **Wi-Fi**: Hold (○ + 🔘) until voice prompt.  
-  - **System**: Press reset pin → clears schedules/Wi-Fi settings.  
+---
+### **Safety Notes**:
+- **Do NOT use** on wet surfaces/non-flat areas  
+- Keep away from cliffs (e.g., stairs)  
+- Avoid vacuuming liquids/sharp objects  
+- Supervise children/pets during operation  
+- Use only original charger/battery  
 
----  
-
-#### **Safety Notes**  
-- Avoid wet areas, cliffs (e.g., stairs), or loose cables.  
-- Do not use on dark carpets or near strong magnets.  
-- Keep children/pets away during operation.  
-
----  
-
-**Manufacturer**: Beijing Roborock Technology Co., Ltd. (Xiaomi ecosystem)  
-**Support**: 400-100-5678 or [Mi Service](http://www.mi.com/service).  
-
-*(Summary optimized for end-user clarity, omitting redundant OCR errors.)*
+---
+### **Specs**:
+- **Dimensions**: 345×345×96mm (Robot), 230×109×129mm (Dock)  
+- **Battery**: 14.4V/5200mAh (4hr charge)  
+- **Weight**: 3.8kg  
+- **Noise**: <65dB (Quiet Mode)  
+- **Wi-Fi**: 2.4GHz  
+- **Sensors**: LDS, cliff ×4, ultrasonic, wall-follow  
+```

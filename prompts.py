@@ -1,24 +1,75 @@
 # prompts.py
 
+# pyx555/rew/REW-b9dc54592ccf1b2c97785d0a18c8d5589cb1cda3/prompts.py
+
 def GET_BEHAVIOR_EXTRACTION_PROMPT() -> str:
     """
-    返回论文表I  中的提示词：设备行为提取。
+    返回论文表I 中的提示词：设备行为提取。
+    (已修改为：强制输出结构化、面向用户的摘要格式)
     """
     return """
 Task Description(OCR Error Correction):
 Solve the given task. The following is the OCR recognition result of a smart home device, which may have typos, missing words, extra words or symbols, etc. You need to correct the key information of this device based on it.
 
 Task Description(Device Behavior Extraction):
-After correction, you need to further summarize the key information of this device based on it, specifically all states, operations, and behaviors of this device, based on it and common sense, for end users to further understand its behavior.
+After correction, your task is to reorganize and summarize all the device's functional and behavioral information into a detailed, user-friendly manual format. This summary must be the *complete* representation of the device's behavior for downstream modeling.
 
 Input(User manual of the device):
 The OCR recognition result of the manual is as follows:
 {ocr_input}
 
 Output Form Description:
-You should answer the result directly.
+You must return the result directly in Markdown format, strictly following this exact structure and using all the specified headings (including '###' and '####'):
+
+### Corrected and Summarized Key Information:
+
+#### **Device Name**:
+[Device Name and Model]
+
+#### **Key Features**:
+[List of key features]
+
+---
+### **States & Indicators**:
+
+1.  **Ring Light Colors**:
+    [List of color/status descriptions]
+
+2.  **Wi-Fi LED**:
+    [List of Wi-Fi LED statuses]
+
+---
+### **Operations & Behaviors**:
+
+#### **Basic Controls**:
+[List of user button interactions]
+
+#### **Modes**:
+[List of cleaning/operation modes]
+
+#### **Auto Behaviors**:
+[List of automatic system actions (e.g., auto-return, resume mid-clean)]
+
+---
+### **Maintenance**:
+[List of maintenance schedules]
+
+---
+### **Troubleshooting**:
+[List of common errors and reset procedures]
+
+---
+### **Safety Notes**:
+[List of safety warnings]
+
+---
+### **Specs**:
+[List of technical specifications]
+
+This summary must be comprehensive and cover all information necessary to build a formal state machine model.
 """
-# prompts.py
+
+
 
 def GET_REACT_MODELING_PROMPT():
     return """You are a formal verification expert. Your job is to extract a Mealy machine model from the device description.
@@ -57,9 +108,9 @@ Action: finish[{"states": ["off", "on"], ...}]
 IMPORTANT RULES:
 1. ONLY generate ONE Thought and ONE Action per turn.
 2. DO NOT generate "Observation:" yourself. The system will provide it.
-3. If you already have enough information from the initial description, you can directly use the 'finish' action.
-4. The model MUST be COMPLETELY SPECIFIED. For EVERY state, you MUST define a transition for EVERY possible input.
+3. **CRITICAL COMPLETENESS RULE**: The model MUST be COMPLETELY SPECIFIED. For EVERY state, you MUST define a transition for EVERY single possible input.
    - If an input is ignored, you MUST add a "self-loop" transition: {"from": "state_A", "to": "state_A", "input": "ignored_input", "output": "none"}
+4. **CRITICAL NAMING RULE**: All state names, input names, and output names MUST consist ONLY of lowercase letters and underscores (a-z, _). Do NOT use Chinese, spaces, slashes (/), or capital letters.
 
 Device Description to Model:
 {behavior_input}
