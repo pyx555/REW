@@ -1,208 +1,190 @@
 # prompts.py
 
-# pyx555/rew/REW-b9dc54592ccf1b2c97785d0a18c8d5589cb1cda3/prompts.py
-
 def GET_BEHAVIOR_EXTRACTION_PROMPT() -> str:
     """
-    返回论文表I 中的提示词：设备行为提取。
-    (已修改为：强制输出结构化、面向用户的摘要格式)
+    [模块 1] 行为提取提示词 (深度优化版)
+    目标：清洗 OCR 文本，并建立严格的‘状态字典’和‘状态转换表’，
+    为后续的形式化建模扫清障碍。
     """
     return """
-Task Description(OCR Error Correction):
-Solve the given task. The following is the OCR recognition result of a smart home device, which may have typos, missing words, extra words or symbols, etc. You need to correct the key information of this device based on it.
+**角色定义**：
+你是一位资深的嵌入式系统需求分析师。你的任务是读取一份智能家居设备的中文说明书（OCR 识别文本），将其转化为一份用于形式化验证（Model Checking）的**系统行为规范**。
 
-Task Description(Device Behavior Extraction):
-After correction, your task is to reorganize and summarize all the device's functional and behavioral information into a detailed, user-friendly manual format. This summary must be the *complete* representation of the device's behavior for downstream modeling.
-
-Input(User manual of the device):
-The OCR recognition result of the manual is as follows:
+**输入 (OCR 原始文本)**:
 {ocr_input}
 
-Output Form Description:
-You must return the result directly in Markdown format, strictly following this exact structure and using all the specified headings (including '###' and '####'):
+**核心指令**：
 
-### Corrected and Summarized Key Information:
+1.  **文本清洗**：
+    * 修复 打字错误、遗漏单词、多余的单词或符号等（如把 '0' 修复为 'O'，'坐盒' 修复为 '尘盒'）。
+    * 忽略无用的营销话术（如“科技改变生活”），只保留功能逻辑。
 
-#### **Device Name**:
-[Device Name and Model]
+2.  **建立状态字典 (State Dictionary) 【至关重要】**：
+    * 根据常识并且通读全文，提取设备所有可能的**可感知状态**。
+    * 为每个状态指定一个**唯一的、全小写、下划线连接的英文 ID (snake_case)**。
 
-#### **Key Features**:
-[List of key features]
 
----
-### **States & Indicators**:
-
-1.  **Ring Light Colors**:
-    [List of color/status descriptions]
-
-2.  **Wi-Fi LED**:
-    [List of Wi-Fi LED statuses]
+3.  **提取转换逻辑 (Transition Logic)**：
+    * 识别所有的 `[当前状态] + [触发条件/输入信号] -> [目标状态]` 逻辑。
+    * **特别关注自动行为**：如“10分钟无操作 -> 休眠”、“电量低 -> 回充”。这些是验证死锁的关键。
 
 ---
-### **Operations & Behaviors**:
 
-#### **Basic Controls**:
-[List of user button interactions]
+**输出格式要求 (请严格按照以下 Markdown 格式输出)**：
 
-#### **Modes**:
-[List of cleaning/operation modes]
+### 1. 设备基本信息
+* **设备名称**: [名称]
+* **核心功能**: [简短列表]
 
-#### **Auto Behaviors**:
-[List of automatic system actions (e.g., auto-return, resume mid-clean)]
+### 2. 状态定义表 (State Dictionary)
+| 中文状态名 | 英文 ID (用于代码) | 状态描述 | 是否初始状态 |
+| :--- | :--- | :--- | :--- |
+| 关机 | off | 电源完全切断 | 是 |
+| 待命 | standby | 开机静止，等待指令 | 否 |
+| ... | ... | ... | ... |
+*(请确保列出所有状态)*
 
----
-### **Maintenance**:
-[List of maintenance schedules]
+### 3. 详细行为逻辑 (Transitions)
 
----
-### **Troubleshooting**:
-[List of common errors and reset procedures]
+#### A. 用户按键操作 (User Actions)
+* **[off]** + 长按电源键 -> **[standby]**
+* **[standby]** + 短按清扫键 -> **[cleaning]**
+* ...
 
----
-### **Safety Notes**:
-[List of safety warnings]
+#### B. 系统自动事件 (System Events & Timeouts)
+* **[standby]** + 无操作10分钟 (timeout_10min) -> **[sleep]**
+* **[cleaning]** + 电量低 (low_battery) -> **[returning]**
+* **[charging]** + 充满电 (battery_full) -> **[standby]**
+* ...
 
----
-### **Specs**:
-[List of technical specifications]
+#### C. 故障与异常 (Errors)
+* **[any_state]** + 轮子悬空/传感器异常 -> **[error]**
+* ...
 
-This summary must be comprehensive and cover all information necessary to build a formal state machine model.
+### 4. 补充说明 (Notes)
+* [列出任何特殊的逻辑约束，例如：充电座上无法关机、故障排除后需重置等]
 """
 
 
 
-def GET_REACT_MODELING_PROMPT():
-    return """You are a formal verification expert. Your job is to extract a Mealy machine model from the device description.
-
-Use the following ReAct format strictly:
-
-Thought: <your reasoning about what to do next>
-Action: <one of the available actions>
-[STOP HERE and wait for Observation]
-Observation: <the result of your action will be pasted here by the system>
-
-Available Actions:
-- search[keyword]: Searches specifically for 'keyword' in the text.
-- lookup[keyword]: Finds the exact sentence containing 'keyword'.
-- finish[json_model]: Returns the final JSON model when you are confident.
-
-Examples:
-Thought: I need [Module 3] Starting quality check...
-[Module 3] Check FAILED: Clarity
-[Module 3] Starting quality check...
-[Module 3] Check FAILED: Clarity
---- Quality Check FAILED ---
-Reason: Clarity check failed for state 'cleaning'. Missing transitions for inputs: {'long_press_power', 'short_press_home', 'long_press_home', 'short_press_power', 'error_resolved', 'battery_charged', 'error_occurred', 'resume'}
-[Module 4] Constructing feedback prompt...
-
---- Modeling FAILED after 5 attempts ---
-
-=== MODELING FAILED ===
-Max attempts reached. Model could not be verified.to find how to turn it on.
-Action: search[电源]
-Observation: Found: "长按电源键3秒可以开机..."
-
-Thought: I have all info.
-Action: finish[{"states": ["off", "on"], ...}]
-
-IMPORTANT RULES:
-1. ONLY generate ONE Thought and ONE Action per turn.
-2. DO NOT generate "Observation:" yourself. The system will provide it.
-3. **CRITICAL COMPLETENESS RULE**: The model MUST be COMPLETELY SPECIFIED. For EVERY state, you MUST define a transition for EVERY single possible input.
-   - If an input is ignored, you MUST add a "self-loop" transition: {"from": "state_A", "to": "state_A", "input": "ignored_input", "output": "none"}
-4. **CRITICAL NAMING RULE**: All state names, input names, and output names MUST consist ONLY of lowercase letters and underscores (a-z, _). Do NOT use Chinese, spaces, slashes (/), or capital letters.
-
-Device Description to Model:
-{behavior_input}
-"""
-
-
-
-'''
 def GET_REACT_MODELING_PROMPT() -> str:
     """
-    返回论文表II  中的提示词：基于ReAct的自动建模。
+    [模块 2] ReAct 建模提示词 (动作定义增强版)
+    优化点：
+    1. 明确定义 search/lookup/finish 三个动作。
+    2. 在 'finish' 动作中强行植入 JSON 格式约束。
+    3. 结合 ReAct 思维链，确保先思考后行动。
     """
     return """
-ReAct Prompting:
-Solve the given task by following Thought, Action, and Observation for every step.
-Thought: Reason about the current situation and the next steps to follow.
-Action: Choose one of the available actions:
-1.  `search[query]`: Search the device behavior description for information about a state, transition, or keyword.
-2.  `lookup[keyword]`: Look up a specific keyword in the provided text to find related sentences.
-3.  `finish[json_model]`: Finish the task and return the complete Mealy machine model in the specified JSON format.
-Observation: Observe the result of the action.
+**角色定义**：
+你是一个精通 NuSMV 的形式化验证专家 Agent。你的任务是利用 ReAct (思考-行动) 范式，将结构化的设备描述转换为可执行的 Mealy 状态机 JSON。
 
-Task Description:
-Your task is to create a formal Mealy machine model based on the provided device behavior description.
-
-Input(Device Behavior Description):
+**输入数据**：
 {behavior_input}
 
-Output Form Description:
-The final result must be returned using the `finish` action.
-The argument for `finish` MUST be a valid JSON format.
-The JSON must contain:
-1.  `states`: A list of all state names (strings).
-2.  `init_state`: The name of the initial state (e.g., "power_off").
-3.  `transitions`: A list of transition objects.
+---
 
-Each transition object MUST include four keys:
-1.  `"from"`: The source state name.
-2.  `"to"`: The target state name.
-3.  `"input"`: The input signal that triggers the transition.
-4.  `"output"`: The output signal generated during the transition.
+** ReAct 核心协议 (Core Protocol)**：
+你必须严格遵循 **Thought (思考)** -> **Action (行动)** -> **Observation (观察)** 的循环。
 
-In the names of the states, inputs, and outputs you generate, only lowercase letters and underscores are allowed (e.g., "power_off", "long_press_power", "charging_started").
+1. **Thought**：
+   * 在执行任何动作前，必须先用中文进行逻辑推演。
+   * **状态审计**：列出【状态定义表】中所有的 `英文 ID`，并告诉自己：“只允许使用这些状态名”。
+   * **逻辑解析**：分析【详细行为逻辑】中的每一条转换。
 
-Begin your reasoning.
+2. **Action**：
+   * 输出且仅输出一个指令。指令必须属于下方的【可用动作列表】。
+
+3. **Observation**：
+   * 等待系统反馈（通常情况下，如果是 finish 动作，任务即结束）。
+
+---
+
+** 可用动作 (Available Actions)**：
+
+1. **`search[keyword]`**
+   * **描述**：在输入文档中搜索关键词。
+   * **适用场景**：当你觉得某个状态的定义模糊，或者转换条件不清楚时使用。
+
+2. **`lookup[keyword]`**
+   * **描述**：查找包含关键词的具体句子或段落上下文。
+   * **适用场景**：当你需要确认某个逻辑的原文描述时使用。
+
+3. **`finish[json_model]`**
+   * **描述**：提交最终的 JSON 模型并结束任务。
+   * **参数要求 (CRITICAL)**：参数 `json_model` 必须是一个合法的 JSON 对象，且满足以下格式：
+     * `states`: [字符串列表] (必须与表格中的英文 ID 完全一致，严禁创造新词)。
+     * `init_state`: "状态名" (必须在 states 列表中)。
+     * `transitions`: [
+         {{"from": "状态A", "to": "状态B", "input": "事件名", "output": "响应动作"}}
+       ]
+     * **变量规范**：`input` 和 `output` 必须是 **snake_case** (如 `press_power`, `wifi_connected`)，严禁中文。
+     * **通配符**：如果原文写 `[any_state]`，JSON 中 `from` 写 `"*"`。
+
+---
+
+**交互示例 (Example Interaction)**：
+
+<USER>:
+输入文档：
+### 状态表
+| 中文 | 英文 ID |
+| :--- | :--- |
+| 关机 | off |
+| 运行 | run |
+
+### 逻辑
+* [off] + 按键 -> [run]
+
+<YOU>:
+Thought:
+1. **状态审计**：表格里只有 `off` 和 `run`。所以我绝对不能用 `running` 或 `closed`。
+2. **逻辑分析**：
+   - 转换 1: off -> run (input: press_button)。
+3. **决策**：信息完整，不需要 search，直接生成模型。
+
+Action: finish[{
+    "states": ["off", "run"],
+    "init_state": "off",
+    "transitions": [
+        {"from": "off", "to": "run", "input": "press_button", "output": "start"}
+    ]
+}]
+
+---
+
+**当前任务**：
+请利用 ReAct 范式，对上面的 {behavior_input} 进行建模。
+**请开始你的推理 (Thought)...**
 """
-'''
 
-'''
+
 def GET_FEEDBACK_PROMPT_TEMPLATE() -> str:
     """
-    返回论文表IV  中的提示词：质量检查失败的反馈。
+    [模块 4] 反馈提示词 (中文版)
+    将 NuSMV 的数学反例翻译成人类可读的修复指令。
     """
     return """
-Device Model (In last output):
-The model you generated in the last turn was:
+###  质量检查未通过 (Quality Check FAILED)
+
+**你上一次生成的模型**:
 {last_model_draft}
 
-Violated property:
-This model failed the quality check. It violated the following property:
+**违反的属性 (Violated Property)**:
 {violated_property}
 
-Counterexample:
-Here is the counterexample trace demonstrating the violation:
-{counterexample}
-
-Please analyze this error, generate a new 'Thought', and provide a corrected JSON model using the 'finish' action.
-"""
-'''
-
-def GET_FEEDBACK_PROMPT_TEMPLATE() -> str:
-    """
-    返回论文表IV  中的提示词：质量检查失败的反馈。
-    (已修改：添加了 {enhanced_instructions} 占位符以提供修复指南)
-    """
-    return """
-Device Model (In last output):
-The model you generated in the last turn was:
-{last_model_draft}
-
-Violated property:
-This model failed the quality check. It violated the following property:
-{violated_property}
-
-Counterexample:
-Here is the counterexample trace demonstrating the violation:
+**反例路径 (Counterexample Trace)** (这是证明模型出错的证据):
 {counterexample}
 
 ---
-**Actionable Instructions (How to fix this specific error):**
-{enhanced_instructions}
----
+###  专家修复指引
+**{enhanced_instructions}**
 
-Please analyze this error AND the instructions above, generate a new 'Thought', and provide a corrected JSON model using the 'finish' action.
+**要求**:
+1. 仔细阅读上面的 `反例路径`。它展示了模型是在哪一步偏离了预期，或者陷入了死锁。
+2. 阅读 `专家修复指引`。
+3. 思考：“是少了一个转换？还是状态跳转的目标错了？或者是陷入了死循环？”
+4. 请输出一个新的 `finish[...]` 动作，包含修复后的 JSON 模型。**记住保持 Key/Value 为全英文。**
+
+开始你的修复逻辑。
 """

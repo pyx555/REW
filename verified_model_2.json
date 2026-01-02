@@ -1,0 +1,249 @@
+{
+    "states": [
+        "off",
+        "standby",
+        "cleaning",
+        "mopping",
+        "returning",
+        "charging",
+        "washing",
+        "drying",
+        "paused",
+        "sleep",
+        "error",
+        "do_not_disturb",
+        "resetting",
+        "connecting"
+    ],
+    "init_state": "off",
+    "transitions": [
+        {
+            "from": "off",
+            "to": "standby",
+            "input": "long_press_power",
+            "output": "power_on"
+        },
+        {
+            "from": "standby",
+            "to": "cleaning",
+            "input": "short_press_clean_sweep",
+            "output": "start_cleaning"
+        },
+        {
+            "from": "standby",
+            "to": "mopping",
+            "input": "short_press_clean_mop",
+            "output": "start_mopping"
+        },
+        {
+            "from": "cleaning",
+            "to": "paused",
+            "input": "short_press_any",
+            "output": "pause"
+        },
+        {
+            "from": "mopping",
+            "to": "paused",
+            "input": "short_press_any",
+            "output": "pause"
+        },
+        {
+            "from": "returning",
+            "to": "paused",
+            "input": "short_press_any",
+            "output": "pause"
+        },
+        {
+            "from": "paused",
+            "to": "cleaning",
+            "input": "resume_cleaning",
+            "output": "resume_task"
+        },
+        {
+            "from": "paused",
+            "to": "mopping",
+            "input": "resume_mopping",
+            "output": "resume_task"
+        },
+        {
+            "from": "paused",
+            "to": "returning",
+            "input": "resume_returning",
+            "output": "resume_task"
+        },
+        {
+            "from": "paused",
+            "to": "returning",
+            "input": "start_return_from_pause",
+            "output": "start_return"
+        },
+        {
+            "from": "standby",
+            "to": "off",
+            "input": "long_press_power",
+            "output": "power_off"
+        },
+        {
+            "from": "paused",
+            "to": "off",
+            "input": "long_press_power",
+            "output": "power_off"
+        },
+        {
+            "from": "charging",
+            "to": "do_not_disturb",
+            "input": "long_press_child_lock",
+            "output": "toggle_do_not_disturb"
+        },
+        {
+            "from": "paused",
+            "to": "do_not_disturb",
+            "input": "long_press_child_lock",
+            "output": "toggle_do_not_disturb"
+        },
+        {
+            "from": "standby",
+            "to": "returning",
+            "input": "short_press_clean_on_dock",
+            "output": "start_smart_return"
+        },
+        {
+            "from": "*",
+            "to": "resetting",
+            "input": "long_press_reset",
+            "output": "start_reset"
+        },
+        {
+            "from": "resetting",
+            "to": "standby",
+            "input": "operation_done",
+            "output": "reset_complete"
+        },
+        {
+            "from": "*",
+            "to": "connecting",
+            "input": "long_press_clean_and_child_lock",
+            "output": "start_wifi_config"
+        },
+        {
+            "from": "connecting",
+            "to": "standby",
+            "input": "operation_done",
+            "output": "wifi_config_complete"
+        },
+        {
+            "from": "standby",
+            "to": "sleep",
+            "input": "timeout_10min",
+            "output": "enter_sleep"
+        },
+        {
+            "from": "paused",
+            "to": "sleep",
+            "input": "timeout_10min",
+            "output": "enter_sleep"
+        },
+        {
+            "from": "sleep",
+            "to": "off",
+            "input": "timeout_6h",
+            "output": "auto_power_off"
+        },
+        {
+            "from": "cleaning",
+            "to": "returning",
+            "input": "low_battery",
+            "output": "low_battery_return"
+        },
+        {
+            "from": "mopping",
+            "to": "returning",
+            "input": "low_battery",
+            "output": "low_battery_return"
+        },
+        {
+            "from": "charging",
+            "to": "standby",
+            "input": "battery_full",
+            "output": "charging_complete"
+        },
+        {
+            "from": "cleaning",
+            "to": "returning",
+            "input": "task_done",
+            "output": "task_complete_return"
+        },
+        {
+            "from": "mopping",
+            "to": "returning",
+            "input": "task_done",
+            "output": "task_complete_return"
+        },
+        {
+            "from": "returning",
+            "to": "charging",
+            "input": "dock_reached_charge",
+            "output": "dock_to_charge"
+        },
+        {
+            "from": "returning",
+            "to": "washing",
+            "input": "dock_reached_wash",
+            "output": "dock_to_wash"
+        },
+        {
+            "from": "charging",
+            "to": "washing",
+            "input": "app_start_wash",
+            "output": "start_washing_from_app"
+        },
+        {
+            "from": "washing",
+            "to": "drying",
+            "input": "wash_done",
+            "output": "start_drying"
+        },
+        {
+            "from": "drying",
+            "to": "charging",
+            "input": "dry_done",
+            "output": "start_charging_after_dry"
+        },
+        {
+            "from": "mopping",
+            "to": "returning",
+            "input": "cloth_dirty",
+            "output": "cloth_dirty_return"
+        },
+        {
+            "from": "sleep",
+            "to": "standby",
+            "input": "wake_up",
+            "output": "wake_from_sleep"
+        },
+        {
+            "from": "*",
+            "to": "error",
+            "input": "fault_detected",
+            "output": "fault_alert"
+        },
+        {
+            "from": "error",
+            "to": "standby",
+            "input": "fault_resolved_and_restart",
+            "output": "recover_from_error"
+        },
+        {
+            "from": "washing",
+            "to": "error",
+            "input": "wash_condition_fail",
+            "output": "wash_error"
+        },
+        {
+            "from": "returning",
+            "to": "error",
+            "input": "dock_failed",
+            "output": "return_error"
+        }
+    ]
+}

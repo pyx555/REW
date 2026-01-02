@@ -1,0 +1,65 @@
+### 1. 设备基本信息
+* **设备名称**: 米家免洗扫拖机器人2
+* **核心功能**: 自动清扫、拖地、自动回充、自动清洗拖布、断点续扫、虚拟墙/禁区、预约清扫、地图记忆、远程控制（通过米家APP）。
+
+### 2. 状态定义表 (State Dictionary)
+| 中文状态名 | 英文 ID (用于代码) | 状态描述 | 是否初始状态 |
+| :--- | :--- | :--- | :--- |
+| 关机 | off | 电源完全切断，主机不响应任何操作。 | 是 |
+| 待机 | standby | 主机已开机，静止在基座或地面上，等待指令。 | 否 |
+| 清扫中 | cleaning | 主机正在执行清扫任务（未安装拖布组件）。 | 否 |
+| 扫拖中 | mopping | 主机正在执行扫拖任务（已安装拖布组件）。 | 否 |
+| 回充中 | returning | 主机正在自动寻找并返回基座。 | 否 |
+| 充电中 | charging | 主机在基座上充电，指示灯白色呼吸。 | 否 |
+| 清洗拖布中 | washing | 主机在基座内自动清洗拖布。 | 否 |
+| 风干拖布中 | drying | 主机在基座内风干拖布。 | 否 |
+| 暂停 | paused | 在清扫/扫拖/回充过程中被用户或系统暂停。 | 否 |
+| 休眠 | sleep | 主机在非充电状态下，超过10分钟无操作进入低功耗状态。 | 否 |
+| 故障 | error | 主机检测到异常（如传感器被遮挡、轮子悬空、尘盒未装等），停止工作并提示。 | 否 |
+| 勿扰模式 | do_not_disturb | 主机在该模式下，不执行断点续扫、预约清扫及主动播报语音，且充电10秒后指示灯熄灭。 | 否 |
+| 系统重置中 | resetting | 主机正在恢复出厂设置。 | 否 |
+| 联网配置中 | connecting | 主机正在连接Wi-Fi网络。 | 否 |
+
+### 3. 详细行为逻辑 (Transitions)
+
+#### A. 用户按键操作 (User Actions)
+* **[off]** + 长按主机电源键3秒 -> **[standby]**
+* **[standby]** + 短按主机清扫键 -> **[cleaning]** 或 **[mopping]** (取决于配件安装)
+* **[cleaning/mopping/returning]** + 短按任意键 -> **[paused]**
+* **[paused]** + 短按主机清扫键 -> **[cleaning]** 或 **[mopping]** 或 **[returning]** (恢复之前任务)
+* **[paused]** + 短按主机清扫键（若之前任务为清扫/扫拖） -> **[returning]** (启动回充)
+* **[standby/paused]** + 长按主机电源键3秒 -> **[off]**
+* **[charging/paused]** + 长按童锁键3秒 -> **[do_not_disturb]** (切换)
+* **[standby]** + 短按主机清扫键（主机在基座上） -> **[returning]** (智能回充)
+* **[any_state]** + 使用工具长按重置键3秒 -> **[resetting]** -> **[standby]**
+* **[any_state]** + 同时长按清扫键和童锁键7秒 -> **[connecting]** -> **[standby]**
+
+#### B. 系统自动事件 (System Events & Timeouts)
+* **[standby/paused]** + 无操作10分钟 (timeout_10min) -> **[sleep]**
+* **[sleep]** + 无预约且休眠超过6小时 (timeout_6h) -> **[off]**
+* **[cleaning/mopping]** + 电量低 (low_battery) -> **[returning]** -> **[charging]**
+* **[charging]** + 电量充满 (battery_full) -> **[standby]**
+* **[cleaning/mopping]** + 任务完成 (task_done) -> **[returning]** -> **[charging]** (若在基座) -> **[washing]** (若为扫拖模式) -> **[drying]** -> **[charging]**
+* **[mopping]** + 拖布脏污 (cloth_dirty) -> **[returning]** -> **[washing]** -> **[drying]** -> **[charging]** -> **[mopping]** (断点续扫)
+* **[charging]** + 用户通过APP启动清洗 -> **[washing]** -> **[drying]** -> **[charging]**
+* **[returning]** + 成功抵达基座 (dock_reached) -> **[charging]** 或 **[washing]**
+* **[sleep]** + 按键/APP唤醒 (wake_up) -> **[standby]**
+* **[resetting/connecting]** + 操作完成 (operation_done) -> **[standby]**
+
+#### C. 故障与异常 (Errors)
+* **[any_state]** + 检测到故障 (如：激光雷达被遮挡、悬崖传感器触发、轮子悬空、尘盒/滤网/清水箱/污水箱/清洗架未安装、主刷缠绕) -> **[error]**
+* **[error]** + 故障排除 (如：清除遮挡物、装回配件、清理缠绕物) + 重启主机 -> **[standby]**
+* **[washing]** + 清洗条件不满足 (如：清水箱空、污水箱满、基座断电) -> **[error]**
+* **[returning]** + 回充失败 (如：基座附近障碍物多、距离太远) -> **[error]**
+
+### 4. 补充说明 (Notes)
+* **初始状态**：设备首次开箱时，处于 `off` 状态。首次充电后，从基座上拿起或开机后进入 `standby`。
+* **充电与关机互斥**：主机在基座上连接充电时，无法关机（长按电源键无效），状态会保持在 `charging`、`washing`、`drying` 或 `standby`。
+* **状态覆盖**：`error` 状态具有最高优先级，可以从任何其他状态（除 `off`、`resetting`、`connecting` 外）切入。
+* **配件依赖**：
+    * 所有清洁模式必须安装尘盒，否则无法从 `standby` 进入 `cleaning` 或 `mopping`，并可能触发 `error`。
+    * `mopping` 状态需要安装拖布组件、清水箱、污水箱。
+    * `washing` 状态需要基座、清水箱、污水箱、清洗架安装到位。
+* **地图与功能**：虚拟墙/禁区、划区清扫、房间记忆等功能依赖于在APP中成功建图并保存地图。
+* **勿扰模式**：在 `do_not_disturb` 状态下，`断点续扫` 和 `预约清扫` 功能被禁用。
+* **休眠例外**：主机在基座上时（即处于 `charging`、`washing`、`drying`、`standby` 于基座），不会进入 `sleep` 状态。

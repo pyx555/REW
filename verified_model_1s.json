@@ -1,0 +1,417 @@
+{
+    "states": [
+        "off",
+        "standby",
+        "cleaning",
+        "spot_cleaning",
+        "paused",
+        "returning",
+        "charging",
+        "sleep",
+        "error",
+        "wifi_waiting",
+        "wifi_connecting",
+        "wifi_connected",
+        "do_not_disturb",
+        "firmware_updating"
+    ],
+    "init_state": "off",
+    "transitions": [
+        {
+            "from": "off",
+            "to": "charging",
+            "input": "place_on_dock",
+            "output": "none"
+        },
+        {
+            "from": "off",
+            "to": "charging",
+            "input": "long_press_power_on_dock",
+            "output": "none"
+        },
+        {
+            "from": "off",
+            "to": "standby",
+            "input": "long_press_power_off_dock",
+            "output": "none"
+        },
+        {
+            "from": "off",
+            "to": "off",
+            "input": "*",
+            "output": "none"
+        },
+        {
+            "from": "standby",
+            "to": "cleaning",
+            "input": "short_press_clean",
+            "output": "start_cleaning"
+        },
+        {
+            "from": "standby",
+            "to": "spot_cleaning",
+            "input": "long_press_home",
+            "output": "start_spot_cleaning"
+        },
+        {
+            "from": "standby",
+            "to": "off",
+            "input": "long_press_power",
+            "output": "shutdown"
+        },
+        {
+            "from": "standby",
+            "to": "sleep",
+            "input": "timeout_10min",
+            "output": "enter_sleep"
+        },
+        {
+            "from": "standby",
+            "to": "cleaning",
+            "input": "scheduled_time",
+            "output": "start_scheduled_cleaning"
+        },
+        {
+            "from": "standby",
+            "to": "wifi_waiting",
+            "input": "activate_wifi",
+            "output": "start_wifi_setup"
+        },
+        {
+            "from": "standby",
+            "to": "do_not_disturb",
+            "input": "activate_dnd",
+            "output": "enter_do_not_disturb"
+        },
+        {
+            "from": "standby",
+            "to": "standby",
+            "input": "*",
+            "output": "none"
+        },
+        {
+            "from": "cleaning",
+            "to": "paused",
+            "input": "press_any_key",
+            "output": "pause_cleaning"
+        },
+        {
+            "from": "cleaning",
+            "to": "returning",
+            "input": "cleaning_complete",
+            "output": "start_returning"
+        },
+        {
+            "from": "cleaning",
+            "to": "returning",
+            "input": "low_battery",
+            "output": "start_returning"
+        },
+        {
+            "from": "cleaning",
+            "to": "sleep",
+            "input": "timeout_10min",
+            "output": "enter_sleep"
+        },
+        {
+            "from": "cleaning",
+            "to": "cleaning",
+            "input": "cleaning_less_10min",
+            "output": "restart_cleaning"
+        },
+        {
+            "from": "cleaning",
+            "to": "error",
+            "input": "sensor_error",
+            "output": "alert_error"
+        },
+        {
+            "from": "cleaning",
+            "to": "cleaning",
+            "input": "*",
+            "output": "none"
+        },
+        {
+            "from": "spot_cleaning",
+            "to": "paused",
+            "input": "press_any_key",
+            "output": "pause_spot_cleaning"
+        },
+        {
+            "from": "spot_cleaning",
+            "to": "standby",
+            "input": "spot_cleaning_complete",
+            "output": "return_to_start"
+        },
+        {
+            "from": "spot_cleaning",
+            "to": "sleep",
+            "input": "timeout_10min",
+            "output": "enter_sleep"
+        },
+        {
+            "from": "spot_cleaning",
+            "to": "error",
+            "input": "sensor_error",
+            "output": "alert_error"
+        },
+        {
+            "from": "spot_cleaning",
+            "to": "spot_cleaning",
+            "input": "*",
+            "output": "none"
+        },
+        {
+            "from": "paused",
+            "to": "cleaning",
+            "input": "short_press_clean",
+            "output": "resume_cleaning"
+        },
+        {
+            "from": "paused",
+            "to": "returning",
+            "input": "short_press_home",
+            "output": "end_cleaning_and_return"
+        },
+        {
+            "from": "paused",
+            "to": "spot_cleaning",
+            "input": "long_press_home",
+            "output": "end_current_and_start_spot"
+        },
+        {
+            "from": "paused",
+            "to": "sleep",
+            "input": "timeout_10min",
+            "output": "enter_sleep"
+        },
+        {
+            "from": "paused",
+            "to": "paused",
+            "input": "*",
+            "output": "none"
+        },
+        {
+            "from": "returning",
+            "to": "charging",
+            "input": "dock_success",
+            "output": "start_charging"
+        },
+        {
+            "from": "returning",
+            "to": "standby",
+            "input": "dock_fail",
+            "output": "return_to_start"
+        },
+        {
+            "from": "returning",
+            "to": "sleep",
+            "input": "timeout_10min",
+            "output": "enter_sleep"
+        },
+        {
+            "from": "returning",
+            "to": "error",
+            "input": "sensor_error",
+            "output": "alert_error"
+        },
+        {
+            "from": "returning",
+            "to": "returning",
+            "input": "*",
+            "output": "none"
+        },
+        {
+            "from": "charging",
+            "to": "cleaning",
+            "input": "short_press_clean",
+            "output": "start_cleaning"
+        },
+        {
+            "from": "charging",
+            "to": "standby",
+            "input": "battery_full",
+            "output": "stop_charging"
+        },
+        {
+            "from": "charging",
+            "to": "error",
+            "input": "charge_error",
+            "output": "alert_error"
+        },
+        {
+            "from": "charging",
+            "to": "charging",
+            "input": "*",
+            "output": "none"
+        },
+        {
+            "from": "sleep",
+            "to": "standby",
+            "input": "press_any_key",
+            "output": "wake_up"
+        },
+        {
+            "from": "sleep",
+            "to": "off",
+            "input": "timeout_12h",
+            "output": "shutdown_after_sleep"
+        },
+        {
+            "from": "sleep",
+            "to": "sleep",
+            "input": "timeout_10min",
+            "output": "none"
+        },
+        {
+            "from": "sleep",
+            "to": "sleep",
+            "input": "*",
+            "output": "none"
+        },
+        {
+            "from": "error",
+            "to": "standby",
+            "input": "fault_resolved",
+            "output": "reset_to_standby"
+        },
+        {
+            "from": "error",
+            "to": "charging",
+            "input": "place_on_dock",
+            "output": "charge_after_error"
+        },
+        {
+            "from": "error",
+            "to": "sleep",
+            "input": "timeout_10min",
+            "output": "enter_sleep"
+        },
+        {
+            "from": "error",
+            "to": "error",
+            "input": "*",
+            "output": "none"
+        },
+        {
+            "from": "wifi_waiting",
+            "to": "wifi_connecting",
+            "input": "start_connection",
+            "output": "connecting_to_wifi"
+        },
+        {
+            "from": "wifi_waiting",
+            "to": "off",
+            "input": "timeout_1h",
+            "output": "wifi_off"
+        },
+        {
+            "from": "wifi_waiting",
+            "to": "sleep",
+            "input": "timeout_10min",
+            "output": "enter_sleep"
+        },
+        {
+            "from": "wifi_waiting",
+            "to": "wifi_waiting",
+            "input": "*",
+            "output": "none"
+        },
+        {
+            "from": "wifi_connecting",
+            "to": "wifi_connected",
+            "input": "connection_success",
+            "output": "wifi_connected_ok"
+        },
+        {
+            "from": "wifi_connecting",
+            "to": "standby",
+            "input": "connection_fail",
+            "output": "wifi_setup_failed"
+        },
+        {
+            "from": "wifi_connecting",
+            "to": "sleep",
+            "input": "timeout_10min",
+            "output": "enter_sleep"
+        },
+        {
+            "from": "wifi_connecting",
+            "to": "wifi_connecting",
+            "input": "*",
+            "output": "none"
+        },
+        {
+            "from": "wifi_connected",
+            "to": "standby",
+            "input": "deactivate_wifi",
+            "output": "wifi_off"
+        },
+        {
+            "from": "wifi_connected",
+            "to": "firmware_updating",
+            "input": "start_update",
+            "output": "begin_firmware_update"
+        },
+        {
+            "from": "wifi_connected",
+            "to": "sleep",
+            "input": "timeout_10min",
+            "output": "enter_sleep"
+        },
+        {
+            "from": "wifi_connected",
+            "to": "wifi_connected",
+            "input": "*",
+            "output": "none"
+        },
+        {
+            "from": "do_not_disturb",
+            "to": "standby",
+            "input": "do_not_disturb_timeout",
+            "output": "exit_do_not_disturb"
+        },
+        {
+            "from": "do_not_disturb",
+            "to": "sleep",
+            "input": "timeout_10min",
+            "output": "enter_sleep"
+        },
+        {
+            "from": "do_not_disturb",
+            "to": "standby",
+            "input": "activate_dnd",
+            "output": "exit_do_not_disturb"
+        },
+        {
+            "from": "do_not_disturb",
+            "to": "do_not_disturb",
+            "input": "*",
+            "output": "none"
+        },
+        {
+            "from": "firmware_updating",
+            "to": "standby",
+            "input": "update_success",
+            "output": "firmware_updated"
+        },
+        {
+            "from": "firmware_updating",
+            "to": "error",
+            "input": "update_fail",
+            "output": "firmware_update_error"
+        },
+        {
+            "from": "firmware_updating",
+            "to": "sleep",
+            "input": "timeout_10min",
+            "output": "enter_sleep"
+        },
+        {
+            "from": "firmware_updating",
+            "to": "firmware_updating",
+            "input": "*",
+            "output": "none"
+        }
+    ]
+}

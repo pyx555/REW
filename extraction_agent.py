@@ -1,4 +1,8 @@
 # extraction_agent.py
+import argparse
+import os
+import re
+
 import prompts
 from llm_api_client import call_llm
 import config
@@ -31,41 +35,33 @@ def extract_device_behavior(ocr_text: str) -> str:
 
 
 if __name__ == "__main__":
-    import os
+    # === 命令行模式 (单独运行时执行) ===
+    parser = argparse.ArgumentParser(description="模块 1: 设备行为提取")
+    parser.add_argument("input_file", nargs='?', default="input_2.txt", help="OCR 源文件路径")
+    parser.add_argument("output_file", nargs='?', default=None, help="输出文件路径 (可选)")
+    args = parser.parse_args()
 
-    # 指定输入和输出文件名
-    input_filename = 'input_1s.txt'
-    output_filename = 'output_1s.txt' # <--- 这是您希望的输出文件
-
-    # 检查文件是否存在
-    if not os.path.exists(input_filename):
-        print(f"Error: 找不到文件 '{input_filename}'。请确保它和当前脚本在同一目录下。")
+    # 1. 确定文件名
+    input_path = args.input_file
+    if args.output_file:
+        output_path = args.output_file
     else:
-        try:
-            print(f"=== 正在读取 {input_filename} ===")
-            # 使用 utf-8 编码读取
-            with open(input_filename, 'r', encoding='utf-8') as f:
-                file_ocr_content = f.read()
+        # === 修改处 ===
+        base = os.path.splitext(os.path.basename(input_path))[0]
+        identifier = re.sub(r'^(input|output)_?', '', base, flags=re.IGNORECASE)
+        output_path = f"output_{identifier}.txt"
 
-            if not file_ocr_content.strip():
-                print("Warning: 文件内容为空！")
-            else:
-                print(f"成功读取 {len(file_ocr_content)} 个字符。")
-                print("=== 开始执行行为提取 (这可能需要几十秒) ===")
+    # 2. 运行提取
+    if not os.path.exists(input_path):
+        print(f"Error: 文件 '{input_path}' 不存在.")
+        exit(1)
 
-                # 调用核心函数
-                result = extract_device_behavior(file_ocr_content)
+    with open(input_path, 'r', encoding='utf-8') as f:
+        raw_text = f.read()
 
-                print("\n=== 最终提取结果 (预览) ===")
-                print(result[:1000] + "...") # 打印结果的前1000个字符作为预览
+    behavior_desc = extract_device_behavior(raw_text)
 
-                # --- [已修改] ---
-                # 将结果保存到 'output_1s.txt'
-                print(f"\n=== 正在保存结果到 {output_filename} ===")
-                with open(output_filename, 'w', encoding='utf-8') as f_out:
-                    f_out.write(result)
-                print(f"结果已成功保存到 {output_filename}")
-                # --------------
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write(behavior_desc)
 
-        except Exception as e:
-            print(f"\n!!! 运行出错!!!\n{e}")
+    print(f"结果已保存至: {output_path}")

@@ -1,0 +1,15 @@
+{
+  "states": [
+    "off",
+    "standby"
+  ],
+  "init_state": "off",
+  "transitions": [
+    {
+      "from": "off",
+      "to": "standby",
+      "input": "long_press_power",
+      "output": "power_on"
+    }
+  ]
+}

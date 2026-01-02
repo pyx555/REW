@@ -1,88 +1,77 @@
-```markdown
-### Corrected and Summarized Key Information:
+### 1. 设备基本信息
+* **设备名称**: 米家扫地机器人
+* **核心功能**: 激光建图、路径规划清扫、自动回充、局部清扫、手机App远程控制、定时清扫、故障检测与提示。
 
-#### **Device Name**:
-米家扫地机器人 (Model: SDJORO1RR)
+### 2. 状态定义表 (State Dictionary)
+| 中文状态名 | 英文 ID (用于代码) | 状态描述 | 是否初始状态 |
+| :--- | :--- | :--- | :--- |
+| 关机 | off | 电源完全切断，环形指示灯熄灭。 | 是 |
+| 待命 | standby | 开机静止，等待指令，环形指示灯长亮。 | 否 |
+| 清扫中 | cleaning | 正在执行全局清扫任务。 | 否 |
+| 局部清扫中 | spot_cleaning | 正在执行1.5x1.5米方形区域的局部清扫。 | 否 |
+| 暂停 | paused | 在清扫或局部清扫过程中被暂停。 | 否 |
+| 返回充电座中 | returning | 正在自动返回充电座。 | 否 |
+| 充电中 | charging | 正在充电座上充电，环形指示灯呼吸闪烁。 | 否 |
+| 休眠 | sleep | 长时间无操作后进入低功耗状态，环形指示灯若干秒闪烁一次。 | 否 |
+| 故障 | error | 运行异常，环形指示灯红色快闪并语音提示。 | 否 |
+| 等待Wi-Fi连接 | wifi_waiting | Wi-Fi功能已激活，等待手机App连接，Wi-Fi指示灯慢闪。 | 否 |
+| 连接Wi-Fi中 | wifi_connecting | 正在与手机App建立连接，Wi-Fi指示灯快闪。 | 否 |
+| Wi-Fi已连接 | wifi_connected | 已成功连接手机App，Wi-Fi指示灯长亮。 | 否 |
+| 固件升级中 | firmware_updating | 正在通过手机App升级固件，环形指示灯白色快闪。 | 否 |
+| 系统重置中 | system_resetting | 正在执行系统重置操作。 | 否 |
+| 恢复出厂设置中 | factory_resetting | 正在恢复到出厂状态。 | 否 |
 
-#### **Key Features**:
-- Laser-based path planning with real-time room mapping  
-- Multi-sensor navigation (laser, ultrasonic, cliff, wall sensors)  
-- Auto-recharge and resume mid-clean  
-- App control (Mi Home app) for remote scheduling/monitoring  
-- Three cleaning modes (Quiet/Standard/Max)  
-- Virtual wall support (optional accessory)  
-- Self-diagnosis and error alerts  
+### 3. 详细行为逻辑 (Transitions)
 
----
-### **States & Indicators**:
+#### A. 用户按键操作 (User Actions)
+* **[off]** + 长按电源键 -> **[standby]**
+* **[standby]** + 短按清扫键 -> **[cleaning]**
+* **[standby]** + 长按回充键 -> **[spot_cleaning]**
+* **[standby]** + 长按电源键 -> **[off]**
+* **[cleaning]** / **[spot_cleaning]** / **[returning]** + 按任意键 -> **[paused]**
+* **[paused]** + 短按清扫键 -> **[cleaning]** (继续清扫)
+* **[paused]** + 短按回充键 -> **[returning]** (结束清扫并回充)
+* **[paused]** + 长按回充键 -> **[spot_cleaning]** (结束当前清扫，开始局部清扫)
+* **[charging]** + 短按清扫键 -> **[cleaning]**
+* **[sleep]** + 按任意键 -> **[standby]**
+* **[error]** + 故障排除后，按任意键 -> **[standby]** (部分故障) 或 **[off]** (需重启)
+* **[standby]** / **[charging]** + 同时长按清扫键和回充键 -> **[wifi_waiting]** (重置Wi-Fi)
+* **[off]** + 开机状态下，长按回充键并短按系统重置键 -> **[factory_resetting]**
 
-1.  **Ring Light Colors**:
-    - **White**: Battery >50%  
-    - **Yellow**: Battery 20%-50%  
-    - **Red**: Battery <20%  
-    - **Breathing White**: Charging/Starting  
-    - **Red Fast Flash**: Error state  
+#### B. 系统自动事件 (System Events & Timeouts)
+* **[standby]** / **[paused]** + 无操作10分钟 (timeout_10min) -> **[sleep]**
+* **[cleaning]** + 电量低于20% (low_battery) -> **[returning]**
+* **[returning]** + 成功对接充电座 -> **[charging]**
+* **[returning]** + 未找到充电座 -> **[paused]** (在起点位置)
+* **[charging]** + 电量充满 (battery_full) -> **[standby]**
+* **[cleaning]** + 清扫完成 -> **[returning]**
+* **[spot_cleaning]** + 清扫完成 -> **[paused]** (在起点位置)
+* **[sleep]** + 休眠超过12小时 (timeout_12h) -> **[off]**
+* **[wifi_waiting]** + 超过1小时未连接 (timeout_1h) -> Wi-Fi功能关闭 (状态不变，但功能失效)
+* **[cleaning]** + 完成时间小于10分钟 -> **[cleaning]** (自动开始第二次清扫)
+* **[charging]** + 手动放上充电座 -> **[charging]**
+* **[paused]** + 手动放上充电座 -> **[charging]** (并结束本次清扫)
 
-2.  **Wi-Fi LED**:
-    - **Off**: Wi-Fi inactive  
-    - **Slow Flash**: Waiting for connection  
-    - **Fast Flash**: Connecting  
-    - **Solid**: Connected  
+#### C. 故障与异常 (Errors)
+* **[cleaning]** / **[returning]** / **[spot_cleaning]** + 传感器异常/被卡住/轮子悬空等 -> **[error]**
+* **[error]** + 无操作10分钟 (timeout_10min) -> **[sleep]**
+* **[error]** + 手动放上充电座 -> **[charging]** (并结束本次清扫)
+* **[charging]** + 充电异常 (接触不良/未通电) -> **[error]**
+* **[any_state]** + 电池温度异常/内部错误 -> **[error]**
 
----
-### **Operations & Behaviors**:
-
-#### **Basic Controls**:
-- **Power**: Long-press (○) to turn on/off  
-- **Start/Pause**: Short-press (○)  
-- **Return to Dock**: Short-press (↖)  
-- **Spot Clean**: Long-press (↖) (1.5m² area)  
-
-#### **Modes**:
-1. **Full Clean**: Maps room → partitions → Z-shaped path  
-2. **Spot Clean**: Focused 1.5m² square  
-3. **Scheduled Clean**: Via app  
-4. **Quiet/Standard/Max**: Adjust suction power  
-
-#### **Auto Behaviors**:
-- Auto-dock when battery <20%  
-- Resume cleaning after recharge  
-- Auto-sleep after 10min inactivity  
-- Virtual wall avoidance  
-
----
-### **Maintenance**:
-- **Weekly**: Clean main brush, side brush, dustbin, filter  
-- **Monthly**: Clean wheels, sensors, charging contacts  
-- **3-6 Months**: Replace side brush  
-- **6-12 Months**: Replace main brush  
-- **3 Months**: Replace filter  
-
----
-### **Troubleshooting**:
-| **Error** | **Solution** |  
-|-----------|--------------|  
-| Laser blocked | Clear obstruction |  
-| Wheel stuck | Remove debris |  
-| Dustbin missing | Reinstall properly |  
-| Low battery | Recharge |  
-| Wi-Fi issues | Reset via (○ + ↖) |  
-| System freeze | Press reset button |  
-
----
-### **Safety Notes**:
-- **Do NOT use** on wet surfaces/non-flat areas  
-- Keep away from cliffs (e.g., stairs)  
-- Avoid vacuuming liquids/sharp objects  
-- Supervise children/pets during operation  
-- Use only original charger/battery  
-
----
-### **Specs**:
-- **Dimensions**: 345×345×96mm (Robot), 230×109×129mm (Dock)  
-- **Battery**: 14.4V/5200mAh (4hr charge)  
-- **Weight**: 3.8kg  
-- **Noise**: <65dB (Quiet Mode)  
-- **Wi-Fi**: 2.4GHz  
-- **Sensors**: LDS, cliff ×4, ultrasonic, wall-follow  
-```
+### 4. 补充说明 (Notes)
+1.  **互斥与约束**：
+    * 在 `charging` 状态下，无法执行关机操作。
+    * 在 `firmware_updating`、`system_resetting`、`factory_resetting` 状态下，不响应常规用户按键。
+    * `spot_cleaning` 模式会覆盖并结束正在进行的 `cleaning` 任务。
+    * 启动清扫 (`cleaning`) 需要电量充足（未明确阈值，但低电量无法启动）。
+    * 定时清扫仅在 `standby` 状态且电量>20%时触发。
+2.  **状态指示**：
+    * 环形指示灯和Wi-Fi指示灯是重要的状态输出信号，其颜色和闪烁模式与内部状态严格绑定（详见说明书）。
+3.  **环境依赖**：
+    * 自动回充 (`returning`) 的成功与否依赖于充电座放置环境（前方1米，两侧0.5米开阔）及传感器清洁度。
+    * 虚拟墙会阻止机器人进入特定区域，影响 `cleaning` 状态的路径规划。
+4.  **重置与恢复**：
+    * `system_resetting` 会清空定时任务和清扫模式设置，并重置Wi-Fi。
+    * `factory_resetting` 会恢复所有软件设置到出厂状态。
+    * 重置操作是解决 `error` 状态（特别是错误17，18，内部错误）的常见方法。

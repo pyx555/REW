@@ -1,574 +1,292 @@
 {
     "states": [
         "off",
-        "on",
-        "charging",
-        "error",
-        "sleeping",
+        "standby",
         "cleaning",
-        "docking",
-        "spot_cleaning"
+        "spot_cleaning",
+        "paused",
+        "returning",
+        "charging",
+        "sleep",
+        "error",
+        "wifi_waiting",
+        "wifi_connecting",
+        "wifi_connected",
+        "firmware_updating",
+        "system_resetting",
+        "factory_resetting"
     ],
-    "inputs": [
-        "long_press_power",
-        "short_press_power",
-        "short_press_home",
-        "long_press_home",
-        "error_occurred",
-        "error_resolved",
-        "battery_low",
-        "battery_charged",
-        "inactivity_timeout",
-        "resume"
-    ],
-    "outputs": [
-        "turn_on",
-        "turn_off",
-        "start_cleaning",
-        "pause_cleaning",
-        "start_docking",
-        "start_spot_clean",
-        "enter_sleep",
-        "enter_error",
-        "exit_error",
-        "start_charging",
-        "stop_charging",
-        "none"
-    ],
+    "init_state": "off",
     "transitions": [
         {
             "from": "off",
-            "to": "on",
+            "to": "standby",
             "input": "long_press_power",
-            "output": "turn_on"
+            "output": "power_on"
         },
         {
-            "from": "on",
-            "to": "off",
-            "input": "long_press_power",
-            "output": "turn_off"
-        },
-        {
-            "from": "on",
+            "from": "standby",
             "to": "cleaning",
-            "input": "short_press_power",
+            "input": "short_press_clean",
             "output": "start_cleaning"
         },
         {
-            "from": "cleaning",
-            "to": "on",
-            "input": "short_press_power",
-            "output": "pause_cleaning"
-        },
-        {
-            "from": "on",
-            "to": "docking",
-            "input": "short_press_home",
-            "output": "start_docking"
-        },
-        {
-            "from": "on",
+            "from": "standby",
             "to": "spot_cleaning",
             "input": "long_press_home",
-            "output": "start_spot_clean"
+            "output": "start_spot_cleaning"
         },
         {
-            "from": "spot_cleaning",
-            "to": "on",
-            "input": "short_press_power",
-            "output": "pause_cleaning"
-        },
-        {
-            "from": "on",
-            "to": "error",
-            "input": "error_occurred",
-            "output": "enter_error"
-        },
-        {
-            "from": "error",
-            "to": "on",
-            "input": "error_resolved",
-            "output": "exit_error"
+            "from": "standby",
+            "to": "off",
+            "input": "long_press_power",
+            "output": "power_off"
         },
         {
             "from": "cleaning",
-            "to": "docking",
-            "input": "battery_low",
-            "output": "start_docking"
+            "to": "paused",
+            "input": "press_any_key",
+            "output": "pause"
         },
         {
             "from": "spot_cleaning",
-            "to": "docking",
-            "input": "battery_low",
-            "output": "start_docking"
+            "to": "paused",
+            "input": "press_any_key",
+            "output": "pause"
         },
         {
-            "from": "docking",
-            "to": "charging",
-            "input": "battery_low",
-            "output": "start_charging"
+            "from": "returning",
+            "to": "paused",
+            "input": "press_any_key",
+            "output": "pause"
+        },
+        {
+            "from": "paused",
+            "to": "cleaning",
+            "input": "short_press_clean",
+            "output": "resume_cleaning"
+        },
+        {
+            "from": "paused",
+            "to": "returning",
+            "input": "short_press_home",
+            "output": "return_to_dock"
+        },
+        {
+            "from": "paused",
+            "to": "spot_cleaning",
+            "input": "long_press_home",
+            "output": "start_spot_from_pause"
         },
         {
             "from": "charging",
             "to": "cleaning",
-            "input": "battery_charged",
+            "input": "short_press_clean",
             "output": "start_cleaning"
         },
         {
-            "from": "on",
-            "to": "sleeping",
-            "input": "inactivity_timeout",
+            "from": "sleep",
+            "to": "standby",
+            "input": "press_any_key",
+            "output": "wake_up"
+        },
+        {
+            "from": "error",
+            "to": "standby",
+            "input": "error_resolved",
+            "output": "recover_to_standby"
+        },
+        {
+            "from": "error",
+            "to": "off",
+            "input": "error_critical",
+            "output": "reboot"
+        },
+        {
+            "from": "standby",
+            "to": "wifi_waiting",
+            "input": "long_press_both_buttons",
+            "output": "enter_wifi_setup"
+        },
+        {
+            "from": "charging",
+            "to": "wifi_waiting",
+            "input": "long_press_both_buttons",
+            "output": "enter_wifi_setup"
+        },
+        {
+            "from": "off",
+            "to": "factory_resetting",
+            "input": "long_home_short_reset",
+            "output": "start_factory_reset"
+        },
+        {
+            "from": "standby",
+            "to": "sleep",
+            "input": "timeout_10min",
             "output": "enter_sleep"
         },
         {
-            "from": "sleeping",
-            "to": "on",
-            "input": "short_press_power",
-            "output": "turn_on"
+            "from": "paused",
+            "to": "sleep",
+            "input": "timeout_10min",
+            "output": "enter_sleep"
+        },
+        {
+            "from": "cleaning",
+            "to": "returning",
+            "input": "low_battery",
+            "output": "low_battery_return"
+        },
+        {
+            "from": "returning",
+            "to": "charging",
+            "input": "dock_detected",
+            "output": "start_charging"
+        },
+        {
+            "from": "returning",
+            "to": "paused",
+            "input": "dock_not_found",
+            "output": "pause_at_start"
+        },
+        {
+            "from": "charging",
+            "to": "standby",
+            "input": "battery_full",
+            "output": "fully_charged"
+        },
+        {
+            "from": "cleaning",
+            "to": "returning",
+            "input": "cleaning_completed",
+            "output": "cleaning_done_return"
+        },
+        {
+            "from": "spot_cleaning",
+            "to": "paused",
+            "input": "spot_cleaning_completed",
+            "output": "spot_cleaning_done"
+        },
+        {
+            "from": "sleep",
+            "to": "off",
+            "input": "timeout_12h",
+            "output": "deep_power_off"
+        },
+        {
+            "from": "wifi_waiting",
+            "to": "wifi_waiting",
+            "input": "timeout_1h",
+            "output": "disable_wifi"
         },
         {
             "from": "cleaning",
             "to": "cleaning",
-            "input": "resume",
-            "output": "none"
-        },
-        {
-            "from": "spot_cleaning",
-            "to": "spot_cleaning",
-            "input": "resume",
-            "output": "none"
-        },
-        {
-            "from": "off",
-            "to": "off",
-            "input": "short_press_power",
-            "output": "none"
-        },
-        {
-            "from": "off",
-            "to": "off",
-            "input": "short_press_home",
-            "output": "none"
-        },
-        {
-            "from": "off",
-            "to": "off",
-            "input": "long_press_home",
-            "output": "none"
-        },
-        {
-            "from": "off",
-            "to": "off",
-            "input": "error_occurred",
-            "output": "none"
-        },
-        {
-            "from": "off",
-            "to": "off",
-            "input": "error_resolved",
-            "output": "none"
-        },
-        {
-            "from": "off",
-            "to": "off",
-            "input": "battery_low",
-            "output": "none"
-        },
-        {
-            "from": "off",
-            "to": "off",
-            "input": "battery_charged",
-            "output": "none"
-        },
-        {
-            "from": "off",
-            "to": "off",
-            "input": "inactivity_timeout",
-            "output": "none"
-        },
-        {
-            "from": "off",
-            "to": "off",
-            "input": "resume",
-            "output": "none"
-        },
-        {
-            "from": "on",
-            "to": "on",
-            "input": "short_press_home",
-            "output": "none"
-        },
-        {
-            "from": "on",
-            "to": "on",
-            "input": "long_press_home",
-            "output": "none"
-        },
-        {
-            "from": "on",
-            "to": "on",
-            "input": "error_occurred",
-            "output": "none"
-        },
-        {
-            "from": "on",
-            "to": "on",
-            "input": "error_resolved",
-            "output": "none"
-        },
-        {
-            "from": "on",
-            "to": "on",
-            "input": "battery_low",
-            "output": "none"
-        },
-        {
-            "from": "on",
-            "to": "on",
-            "input": "battery_charged",
-            "output": "none"
-        },
-        {
-            "from": "on",
-            "to": "on",
-            "input": "inactivity_timeout",
-            "output": "none"
-        },
-        {
-            "from": "on",
-            "to": "on",
-            "input": "resume",
-            "output": "none"
+            "input": "cleaning_completed_quick",
+            "output": "restart_cleaning"
         },
         {
             "from": "charging",
             "to": "charging",
-            "input": "long_press_power",
-            "output": "none"
+            "input": "placed_on_dock",
+            "output": "confirm_charging"
         },
         {
-            "from": "charging",
+            "from": "paused",
             "to": "charging",
-            "input": "short_press_power",
-            "output": "none"
-        },
-        {
-            "from": "charging",
-            "to": "charging",
-            "input": "short_press_home",
-            "output": "none"
-        },
-        {
-            "from": "charging",
-            "to": "charging",
-            "input": "long_press_home",
-            "output": "none"
-        },
-        {
-            "from": "charging",
-            "to": "charging",
-            "input": "error_occurred",
-            "output": "none"
-        },
-        {
-            "from": "charging",
-            "to": "charging",
-            "input": "error_resolved",
-            "output": "none"
-        },
-        {
-            "from": "charging",
-            "to": "charging",
-            "input": "battery_low",
-            "output": "none"
-        },
-        {
-            "from": "charging",
-            "to": "charging",
-            "input": "battery_charged",
-            "output": "none"
-        },
-        {
-            "from": "charging",
-            "to": "charging",
-            "input": "inactivity_timeout",
-            "output": "none"
-        },
-        {
-            "from": "charging",
-            "to": "charging",
-            "input": "resume",
-            "output": "none"
-        },
-        {
-            "from": "error",
-            "to": "error",
-            "input": "long_press_power",
-            "output": "none"
-        },
-        {
-            "from": "error",
-            "to": "error",
-            "input": "short_press_power",
-            "output": "none"
-        },
-        {
-            "from": "error",
-            "to": "error",
-            "input": "short_press_home",
-            "output": "none"
-        },
-        {
-            "from": "error",
-            "to": "error",
-            "input": "long_press_home",
-            "output": "none"
-        },
-        {
-            "from": "error",
-            "to": "error",
-            "input": "error_occurred",
-            "output": "none"
-        },
-        {
-            "from": "error",
-            "to": "error",
-            "input": "error_resolved",
-            "output": "none"
-        },
-        {
-            "from": "error",
-            "to": "error",
-            "input": "battery_low",
-            "output": "none"
-        },
-        {
-            "from": "error",
-            "to": "error",
-            "input": "battery_charged",
-            "output": "none"
-        },
-        {
-            "from": "error",
-            "to": "error",
-            "input": "inactivity_timeout",
-            "output": "none"
-        },
-        {
-            "from": "error",
-            "to": "error",
-            "input": "resume",
-            "output": "none"
-        },
-        {
-            "from": "sleeping",
-            "to": "sleeping",
-            "input": "long_press_power",
-            "output": "none"
-        },
-        {
-            "from": "sleeping",
-            "to": "sleeping",
-            "input": "short_press_power",
-            "output": "none"
-        },
-        {
-            "from": "sleeping",
-            "to": "sleeping",
-            "input": "short_press_home",
-            "output": "none"
-        },
-        {
-            "from": "sleeping",
-            "to": "sleeping",
-            "input": "long_press_home",
-            "output": "none"
-        },
-        {
-            "from": "sleeping",
-            "to": "sleeping",
-            "input": "error_occurred",
-            "output": "none"
-        },
-        {
-            "from": "sleeping",
-            "to": "sleeping",
-            "input": "error_resolved",
-            "output": "none"
-        },
-        {
-            "from": "sleeping",
-            "to": "sleeping",
-            "input": "battery_low",
-            "output": "none"
-        },
-        {
-            "from": "sleeping",
-            "to": "sleeping",
-            "input": "battery_charged",
-            "output": "none"
-        },
-        {
-            "from": "sleeping",
-            "to": "sleeping",
-            "input": "inactivity_timeout",
-            "output": "none"
-        },
-        {
-            "from": "sleeping",
-            "to": "sleeping",
-            "input": "resume",
-            "output": "none"
+            "input": "placed_on_dock",
+            "output": "dock_and_charge"
         },
         {
             "from": "cleaning",
-            "to": "cleaning",
-            "input": "long_press_power",
-            "output": "none"
+            "to": "error",
+            "input": "sensor_error",
+            "output": "indicate_error"
         },
         {
-            "from": "cleaning",
-            "to": "cleaning",
-            "input": "short_press_home",
-            "output": "none"
-        },
-        {
-            "from": "cleaning",
-            "to": "cleaning",
-            "input": "long_press_home",
-            "output": "none"
-        },
-        {
-            "from": "cleaning",
-            "to": "cleaning",
-            "input": "error_occurred",
-            "output": "none"
-        },
-        {
-            "from": "cleaning",
-            "to": "cleaning",
-            "input": "error_resolved",
-            "output": "none"
-        },
-        {
-            "from": "cleaning",
-            "to": "cleaning",
-            "input": "battery_charged",
-            "output": "none"
-        },
-        {
-            "from": "cleaning",
-            "to": "cleaning",
-            "input": "inactivity_timeout",
-            "output": "none"
-        },
-        {
-            "from": "cleaning",
-            "to": "cleaning",
-            "input": "resume",
-            "output": "none"
-        },
-        {
-            "from": "docking",
-            "to": "docking",
-            "input": "long_press_power",
-            "output": "none"
-        },
-        {
-            "from": "docking",
-            "to": "docking",
-            "input": "short_press_power",
-            "output": "none"
-        },
-        {
-            "from": "docking",
-            "to": "docking",
-            "input": "short_press_home",
-            "output": "none"
-        },
-        {
-            "from": "docking",
-            "to": "docking",
-            "input": "long_press_home",
-            "output": "none"
-        },
-        {
-            "from": "docking",
-            "to": "docking",
-            "input": "error_occurred",
-            "output": "none"
-        },
-        {
-            "from": "docking",
-            "to": "docking",
-            "input": "error_resolved",
-            "output": "none"
-        },
-        {
-            "from": "docking",
-            "to": "docking",
-            "input": "battery_charged",
-            "output": "none"
-        },
-        {
-            "from": "docking",
-            "to": "docking",
-            "input": "inactivity_timeout",
-            "output": "none"
-        },
-        {
-            "from": "docking",
-            "to": "docking",
-            "input": "resume",
-            "output": "none"
+            "from": "returning",
+            "to": "error",
+            "input": "sensor_error",
+            "output": "indicate_error"
         },
         {
             "from": "spot_cleaning",
-            "to": "spot_cleaning",
-            "input": "long_press_power",
-            "output": "none"
+            "to": "error",
+            "input": "sensor_error",
+            "output": "indicate_error"
         },
         {
-            "from": "spot_cleaning",
-            "to": "spot_cleaning",
-            "input": "short_press_home",
-            "output": "none"
+            "from": "error",
+            "to": "sleep",
+            "input": "timeout_10min",
+            "output": "error_timeout_sleep"
         },
         {
-            "from": "spot_cleaning",
-            "to": "spot_cleaning",
-            "input": "long_press_home",
-            "output": "none"
+            "from": "error",
+            "to": "charging",
+            "input": "placed_on_dock",
+            "output": "error_dock_charge"
         },
         {
-            "from": "spot_cleaning",
-            "to": "spot_cleaning",
-            "input": "error_occurred",
-            "output": "none"
+            "from": "charging",
+            "to": "error",
+            "input": "charging_error",
+            "output": "indicate_charging_error"
         },
         {
-            "from": "spot_cleaning",
-            "to": "spot_cleaning",
-            "input": "error_resolved",
-            "output": "none"
+            "from": "*",
+            "to": "error",
+            "input": "internal_error",
+            "output": "indicate_internal_error"
         },
         {
-            "from": "spot_cleaning",
-            "to": "spot_cleaning",
-            "input": "battery_charged",
-            "output": "none"
+            "from": "wifi_waiting",
+            "to": "wifi_connecting",
+            "input": "app_connect_initiated",
+            "output": "start_wifi_connection"
         },
         {
-            "from": "spot_cleaning",
-            "to": "spot_cleaning",
-            "input": "inactivity_timeout",
-            "output": "none"
+            "from": "wifi_connecting",
+            "to": "wifi_connected",
+            "input": "app_connected",
+            "output": "wifi_connected"
         },
         {
-            "from": "spot_cleaning",
-            "to": "spot_cleaning",
-            "input": "resume",
-            "output": "none"
+            "from": "wifi_connected",
+            "to": "standby",
+            "input": "wifi_disconnected",
+            "output": "exit_wifi_mode"
+        },
+        {
+            "from": "wifi_connected",
+            "to": "firmware_updating",
+            "input": "start_firmware_update",
+            "output": "begin_firmware_update"
+        },
+        {
+            "from": "firmware_updating",
+            "to": "standby",
+            "input": "firmware_update_completed",
+            "output": "firmware_updated"
+        },
+        {
+            "from": "wifi_connected",
+            "to": "system_resetting",
+            "input": "start_system_reset",
+            "output": "begin_system_reset"
+        },
+        {
+            "from": "system_resetting",
+            "to": "standby",
+            "input": "system_reset_completed",
+            "output": "system_reset_done"
+        },
+        {
+            "from": "factory_resetting",
+            "to": "standby",
+            "input": "factory_reset_completed",
+            "output": "factory_reset_done"
         }
     ]
 }

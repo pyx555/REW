@@ -1,0 +1,328 @@
+{
+    "states": [
+        "off",
+        "sleep",
+        "standby",
+        "cleaning",
+        "paused",
+        "returning",
+        "charging",
+        "do_not_disturb",
+        "error",
+        "resetting",
+        "wifi_offline",
+        "mapping",
+        "stuck",
+        "cliff_detected",
+        "tilted"
+    ],
+    "init_state": "off",
+    "transitions": [
+        {
+            "from": "off",
+            "to": "standby",
+            "input": "long_press_power_3s",
+            "output": "power_on"
+        },
+        {
+            "from": "standby",
+            "to": "cleaning",
+            "input": "short_press_clean",
+            "output": "start_cleaning"
+        },
+        {
+            "from": "standby",
+            "to": "returning",
+            "input": "short_press_home",
+            "output": "start_return"
+        },
+        {
+            "from": "cleaning",
+            "to": "paused",
+            "input": "short_press_any",
+            "output": "pause"
+        },
+        {
+            "from": "paused",
+            "to": "cleaning",
+            "input": "short_press_clean",
+            "output": "resume_cleaning"
+        },
+        {
+            "from": "paused",
+            "to": "returning",
+            "input": "short_press_home",
+            "output": "start_return"
+        },
+        {
+            "from": "returning",
+            "to": "paused",
+            "input": "short_press_home",
+            "output": "pause_return"
+        },
+        {
+            "from": "charging",
+            "to": "standby",
+            "input": "short_press_any",
+            "output": "wake_up"
+        },
+        {
+            "from": "sleep",
+            "to": "standby",
+            "input": "short_press_any",
+            "output": "wake_up"
+        },
+        {
+            "from": "sleep",
+            "to": "off",
+            "input": "long_press_power_3s",
+            "output": "power_off"
+        },
+        {
+            "from": "standby",
+            "to": "off",
+            "input": "long_press_power_3s",
+            "output": "power_off"
+        },
+        {
+            "from": "cleaning",
+            "to": "off",
+            "input": "long_press_power_3s",
+            "output": "power_off"
+        },
+        {
+            "from": "paused",
+            "to": "off",
+            "input": "long_press_power_3s",
+            "output": "power_off"
+        },
+        {
+            "from": "returning",
+            "to": "off",
+            "input": "long_press_power_3s",
+            "output": "power_off"
+        },
+        {
+            "from": "do_not_disturb",
+            "to": "off",
+            "input": "long_press_power_3s",
+            "output": "power_off"
+        },
+        {
+            "from": "error",
+            "to": "off",
+            "input": "long_press_power_3s",
+            "output": "power_off"
+        },
+        {
+            "from": "resetting",
+            "to": "off",
+            "input": "long_press_power_3s",
+            "output": "power_off"
+        },
+        {
+            "from": "wifi_offline",
+            "to": "off",
+            "input": "long_press_power_3s",
+            "output": "power_off"
+        },
+        {
+            "from": "mapping",
+            "to": "off",
+            "input": "long_press_power_3s",
+            "output": "power_off"
+        },
+        {
+            "from": "stuck",
+            "to": "off",
+            "input": "long_press_power_3s",
+            "output": "power_off"
+        },
+        {
+            "from": "cliff_detected",
+            "to": "off",
+            "input": "long_press_power_3s",
+            "output": "power_off"
+        },
+        {
+            "from": "tilted",
+            "to": "off",
+            "input": "long_press_power_3s",
+            "output": "power_off"
+        },
+        {
+            "from": "*",
+            "to": "resetting",
+            "input": "long_press_both_7s",
+            "output": "reset_wifi"
+        },
+        {
+            "from": "*",
+            "to": "resetting",
+            "input": "double_long_press_home_5s",
+            "output": "reset_system"
+        },
+        {
+            "from": "standby",
+            "to": "sleep",
+            "input": "timeout_10min",
+            "output": "enter_sleep"
+        },
+        {
+            "from": "paused",
+            "to": "sleep",
+            "input": "timeout_10min",
+            "output": "enter_sleep"
+        },
+        {
+            "from": "cleaning",
+            "to": "returning",
+            "input": "task_done",
+            "output": "start_return"
+        },
+        {
+            "from": "cleaning",
+            "to": "returning",
+            "input": "low_battery",
+            "output": "start_return"
+        },
+        {
+            "from": "returning",
+            "to": "charging",
+            "input": "docked",
+            "output": "start_charging"
+        },
+        {
+            "from": "charging",
+            "to": "standby",
+            "input": "battery_full",
+            "output": "stop_charging"
+        },
+        {
+            "from": "*",
+            "to": "standby",
+            "input": "picked_up",
+            "output": "stop_action"
+        },
+        {
+            "from": "mapping",
+            "to": "standby",
+            "input": "map_done",
+            "output": "finish_mapping"
+        },
+        {
+            "from": "*",
+            "to": "error",
+            "input": "sensor_error",
+            "output": "alert_error"
+        },
+        {
+            "from": "*",
+            "to": "error",
+            "input": "component_jammed",
+            "output": "alert_error"
+        },
+        {
+            "from": "*",
+            "to": "error",
+            "input": "lidar_blocked",
+            "output": "alert_error"
+        },
+        {
+            "from": "*",
+            "to": "error",
+            "input": "cliff_sensor_dirty",
+            "output": "alert_error"
+        },
+        {
+            "from": "*",
+            "to": "error",
+            "input": "bumper_stuck",
+            "output": "alert_error"
+        },
+        {
+            "from": "*",
+            "to": "error",
+            "input": "component_missing",
+            "output": "alert_error"
+        },
+        {
+            "from": "cleaning",
+            "to": "stuck",
+            "input": "physically_stuck",
+            "output": "alert_stuck"
+        },
+        {
+            "from": "*",
+            "to": "error",
+            "input": "temp_out_of_range",
+            "output": "alert_error"
+        },
+        {
+            "from": "error",
+            "to": "standby",
+            "input": "error_resolved_and_short_press_any",
+            "output": "clear_error"
+        },
+        {
+            "from": "stuck",
+            "to": "standby",
+            "input": "obstacle_cleared_and_short_press_any",
+            "output": "clear_stuck"
+        },
+        {
+            "from": "cliff_detected",
+            "to": "standby",
+            "input": "on_level_ground_and_reboot",
+            "output": "recover"
+        },
+        {
+            "from": "tilted",
+            "to": "standby",
+            "input": "on_level_ground_and_reboot",
+            "output": "recover"
+        },
+        {
+            "from": "standby",
+            "to": "do_not_disturb",
+            "input": "app_set_do_not_disturb",
+            "output": "enter_dnd"
+        },
+        {
+            "from": "do_not_disturb",
+            "to": "standby",
+            "input": "app_cancel_do_not_disturb",
+            "output": "exit_dnd"
+        },
+        {
+            "from": "*",
+            "to": "tilted",
+            "input": "tilt_sensor_triggered",
+            "output": "alert_tilt"
+        },
+        {
+            "from": "*",
+            "to": "wifi_offline",
+            "input": "wifi_disconnected",
+            "output": "indicate_offline"
+        },
+        {
+            "from": "wifi_offline",
+            "to": "standby",
+            "input": "wifi_connected",
+            "output": "indicate_online"
+        },
+        {
+            "from": "standby",
+            "to": "mapping",
+            "input": "app_start_mapping",
+            "output": "start_mapping"
+        },
+        {
+            "from": "*",
+            "to": "cliff_detected",
+            "input": "real_cliff_detected",
+            "output": "alert_cliff"
+        }
+    ]
+}

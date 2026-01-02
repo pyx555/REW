@@ -1,23 +1,21 @@
-"""
 # config.py
-# 在此处填入您的 OpenAI API 密钥
-API_KEY = "YOUR_OPENAI_API_KEY_HERE"
 
-# 论文中使用的模型
-LLM_MODEL_NAME = "gpt-4-0613"
+# ================= 配置说明 =================
+# 1. 如果使用 DeepSeek 官方 API:
+#    API_URL = "https://api.deepseek.com/chat/completions"
+#    MODEL_NAME = "deepseek-chat" (或者 deepseek-reasoner)
+#
+# 2. 如果使用 SiliconFlow (硅基流动):
+#    API_URL = "https://api.siliconflow.cn/v1/chat/completions"
+#    MODEL_NAME = "deepseek-ai/DeepSeek-V3"
+# ===========================================
 
-# 论文中提到的最大迭代次数
-MAX_ITERATIONS = 5
+# 在此处填入你的 API 密钥
+API_KEY = "sk-zykmdntdpotgibftsezijrmqypaywoshfboazjwslaktamsb" 
 
-"""
+# 这里根据你的 Key 应该是 SiliconFlow 的格式，所以保留你原来的设置
+API_URL = "https://api.siliconflow.cn/v1/chat/completions"
+LLM_MODEL_NAME = "deepseek-ai/DeepSeek-V3.2"
 
-# config.py
-# 在此处填入您的 DeepSeek API 密钥
-API_KEY = "sk-zykmdntdpotgibftsezijrmqypaywoshfboazjwslaktamsb"
-
-# 更改为您想使用的 DeepSeek 模型名称
-LLM_MODEL_NAME = "deepseek-ai/DeepSeek-V3"
-
-
-# 论文中提到的最大迭代次数
-MAX_ITERATIONS = 20
+# 最大迭代次数
+MAX_ITERATIONS = 8

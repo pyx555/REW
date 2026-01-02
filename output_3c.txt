@@ -1,0 +1,72 @@
+### 1. 设备基本信息
+* **设备名称**: 米家扫拖机器人3C增强版
+* **核心功能**: 扫地、拖地、自动回充、Wi-Fi联网、APP/语音控制、禁区/虚拟墙设置、预约清扫、勿扰模式。
+
+### 2. 状态定义表 (State Dictionary)
+| 中文状态名 | 英文 ID (用于代码) | 状态描述 | 是否初始状态 |
+| :--- | :--- | :--- | :--- |
+| 关机 | off | 电源完全切断，指示灯熄灭。 | 是 |
+| 休眠 | sleep | 暂停或待机10分钟后进入的低功耗状态，可按键唤醒。 | 否 |
+| 待机 | standby | 开机静止，等待指令，状态正常时白色常亮。 | 否 |
+| 清扫中 | cleaning | 正在执行清扫任务（扫地或扫拖）。 | 否 |
+| 暂停 | paused | 清扫过程中被手动暂停。 | 否 |
+| 回充中 | returning | 正在自动返回充电座。 | 否 |
+| 充电中 | charging | 正在充电座上充电。 | 否 |
+| 勿扰模式 | do_not_disturb | 特殊模式，不执行断点续扫、预约清扫及主动播报，充电10秒后指示灯熄灭。 | 否 |
+| 故障 | error | 主机状态异常，指示灯黄色闪烁。 | 否 |
+| 重置中 | resetting | 系统重置或联网中，指示灯白色闪烁。 | 否 |
+| Wi-Fi离线 | wifi_offline | 主机未连接Wi-Fi，指示灯黄色常亮。 | 否 |
+| 建图中 | mapping | 首次使用APP时，主机正在快速建图。 | 否 |
+| 被困 | stuck | 主机被卡住或困住。 | 否 |
+| 悬空 | cliff_detected | 悬崖传感器检测到悬空状态。 | 否 |
+| 倾斜 | tilted | 主机被放置在倾斜地面。 | 否 |
+
+### 3. 详细行为逻辑 (Transitions)
+
+#### A. 用户按键操作 (User Actions)
+* **[off]** + 长按电源键3秒 -> **[standby]**
+* **[standby]** + 短按清扫键 -> **[cleaning]**
+* **[standby]** + 短按回充键 -> **[returning]**
+* **[cleaning]** + 短按任意键 -> **[paused]**
+* **[paused]** + 短按清扫键 -> **[cleaning]**
+* **[paused]** + 短按回充键 -> **[returning]**
+* **[returning]** + 短按回充键 -> **[paused]**
+* **[charging]** + 短按任意键 -> **[standby]** (充电中无法关机)
+* **[sleep]** + 短按任意键 -> **[standby]**
+* **[any_state]** + 长按电源键3秒 -> **[off]** (除`charging`状态外)
+* **[any_state]** + 同时长按清扫键和回充键7秒 -> **[resetting]** (重置Wi-Fi)
+* **[any_state]** + 长按回充键5秒两次 -> **[resetting]** (重置系统设置)
+
+#### B. 系统自动事件 (System Events & Timeouts)
+* **[standby]** + 无操作10分钟 (timeout_10min) -> **[sleep]**
+* **[paused]** + 无操作10分钟 (timeout_10min) -> **[sleep]**
+* **[cleaning]** + 清扫任务完成 (task_done) -> **[returning]**
+* **[cleaning]** + 电量低 (low_battery) -> **[returning]**
+* **[returning]** + 成功对接充电座 (docked) -> **[charging]**
+* **[charging]** + 充满电 (battery_full) -> **[standby]**
+* **[cleaning]** + 检测到地毯 (on_carpet) && 拖布已安装 -> 自动停止拖地（仅扫地）
+* **[any_state]** + 检测到主机被搬离地面 (picked_up) -> **[standby]** (或保持原状态，但停止动作)
+* **[mapping]** + 建图完成 (map_done) -> **[standby]**
+
+#### C. 故障与异常 (Errors)
+* **[any_state]** + 传感器异常/主机状态异常 (sensor_error) -> **[error]**
+* **[any_state]** + 主刷/边刷/轮子缠绕异物 (component_jammed) -> **[error]**
+* **[any_state]** + 激光测距传感器被遮挡 (lidar_blocked) -> **[error]**
+* **[any_state]** + 悬崖传感器误报或太脏 (cliff_sensor_dirty) -> **[error]** 或 **[cliff_detected]**
+* **[any_state]** + 碰撞传感器被卡住 (bumper_stuck) -> **[error]**
+* **[any_state]** + 二合一水箱/拖布未安装 (component_missing) -> **[error]**
+* **[cleaning]** + 主机被卡住无法移动 (physically_stuck) -> **[stuck]**
+* **[any_state]** + 环境温度低于0°C或高于35°C (temp_out_of_range) -> 无法启动/充电，进入保护状态（可归为`error`子类）。
+* **[error]** + 用户清理异物/排除故障 (error_resolved) && 短按任意键 -> **[standby]**
+* **[stuck]** + 用户移除障碍物 (obstacle_cleared) && 短按任意键 -> **[standby]**
+* **[cliff_detected]** + 用户将主机移至平地 (on_level_ground) && 关机重启 -> **[off] -> [standby]**
+* **[tilted]** + 用户将主机放至水平地面 (on_level_ground) && 关机重启 -> **[off] -> [standby]**
+
+### 4. 补充说明 (Notes)
+1.  **初始状态**：主机首次开箱时，通常为`off`状态。放置于充电座后自动开机进入`charging`，充满后进入`standby`。
+2.  **充电约束**：在`charging`状态下，无法通过长按电源键关机。必须短按唤醒至`standby`后才能关机。
+3.  **勿扰模式**：该模式通过APP设置。在此模式下，主机不响应断点续扫、预约清扫指令，且充电行为改变（10秒后指示灯熄灭）。
+4.  **状态优先级**：故障类状态（`error`, `stuck`, `cliff_detected`）通常具有最高优先级，会中断当前任何活动状态（如`cleaning`, `returning`）。
+5.  **回充逻辑**：从`cleaning`状态因低电量触发的回充，与从`standby`/`paused`状态手动触发的回充，目标状态均为`returning`，但前者可能涉及断点续扫逻辑（勿扰模式除外）。
+6.  **网络状态**：`wifi_offline`是一个独立指示状态，通常不影响主机的基础清扫、回充功能，但会使预约清扫、APP遥控等功能失效。`resetting`状态用于网络和系统设置的恢复。
+7.  **配件依赖**：安装拖布组件后，主机进入“扫拖模式”；取下拖布组件后，进入“纯扫地模式”。检测到地毯时，“扫拖模式”会自动停止拖地功能。

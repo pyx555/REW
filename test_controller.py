@@ -1,143 +1,160 @@
+# test_controller.py
 import os
+import re
 import json
-import config  # 确保你有 config.py 并且定义了 MAX_ITERATIONS
+import argparse
+import config
+from pathlib import Path
 
-# 导入所有需要的模块
-from modeling_agent import ReActAgent
+# === 导入各个模块 ===
+from extraction_agent import extract_device_behavior
+# 引入 generate_draft_model 用于在循环中创建新的修复 Agent
+from modeling_agent import ReActAgent, generate_draft_model
 from quality_checker import QualityChecker
 from feedback_module import construct_feedback_prompt
-# 我们仍然需要 extraction_agent 来获取原始文本，
-# 以便 ReAct 代理在修正时有上下文（用于 search/lookup）
-from extraction_agent import extract_device_behavior
+from visualize_model import generate_visualization
 
 
-def run_correction_pipeline(ocr_text: str, initial_draft_json: str):
+def get_file_paths(input_file_path):
     """
-    运行一个修正循环。
-
-    1. 使用 ocr_text 初始化 Agent (用于上下文)。
-    2. 使用 initial_draft_json 作为第一次检查的输入。
-    3. 循环：Check -> Feedback -> Refine (by Agent)
+    根据输入文件路径，自动清洗文件名，生成所有路径
     """
+    path_obj = Path(input_file_path)
+    base_name = path_obj.stem
 
-    print("=== [START] 修正流水线启动 ===")
+    # 使用正则强制去除开头的 input_ 或 output_
+    identifier = re.sub(r'^(input|output)_?', '', base_name, flags=re.IGNORECASE)
 
-    # === 步骤 1: 初始化 ===
-    print("[模块 2] 初始化 ReAct 代理 (需要 OCR 文本作为上下文)...")
-    # Agent 必须用原始行为描述来初始化，
-    # 否则它无法使用 'search' 或 'lookup' 动作来修复模型。
-    agent = ReActAgent(ocr_text)
+    return {
+        "raw_input": str(path_obj),
+        "behavior_txt": f"output_{identifier}.txt",
+        "draft_json": f"draft_model_{identifier}.json",
+        "verified_json": f"verified_model_{identifier}.json",
+        "smv_file": f"final_model_{identifier}.smv",
+        "graph_base": f"final_model_graph_{identifier}"
+    }
 
-    print("[模块 3] 初始化质量检查器...")
-    checker = QualityChecker()
 
+def run_correction_pipeline(behavior_text, checker, initial_draft_json, paths):
+    """
+    运行 Check -> Feedback -> Refine 循环
+    :param behavior_text: 原始行为描述文本 (用于初始化修复 Agent)
+    :param checker: 质量检查器实例
+    :param initial_draft_json: 初始模型 JSON
+    :param paths: 文件路径字典
+    """
     current_model_json = initial_draft_json
     feedback_to_agent = None
 
-    # === 核心迭代循环 (IV.D) ===
     for attempt in range(config.MAX_ITERATIONS):
         print(f"\n--- 修正尝试 {attempt + 1}/{config.MAX_ITERATIONS} ---")
 
+        # 1. 如果有反馈，运行 Agent 进行修复
         if feedback_to_agent:
-            # === [尝试 2, 3, ...] ===
-            # 这不是第一次尝试，我们现在要求 Agent 根据反馈进行修正
-            print("[模块 2] 运行 ReAct 代理 (执行修正)...")
-            (status, model_json_or_error) = agent.run(feedback=feedback_to_agent)
+            print("[模块 2] 运行 ReAct 代理 (修正)...")
+            # === 关键修改 ===
+            # 我们不复用旧 agent，而是创建一个新的修复 Agent
+            (status, model_json_or_error) = generate_draft_model(
+                behavior_text,
+                feedback_prompt=feedback_to_agent
+            )
 
             if status == "ERROR":
-                print(f"--- 建模失败 ---")
-                return ("FAILURE", f"Agent 未能生成修正模型: {model_json_or_error}")
-
+                return ("FAILURE", model_json_or_error)
             current_model_json = model_json_or_error
-            print(f"\n--- [中间输出] 修正尝试 {attempt + 1} 生成的模型 ---")
-            try:
-                parsed_temp_model = json.loads(current_model_json)
-                print(json.dumps(parsed_temp_model, indent=2, ensure_ascii=False))
-            except json.JSONDecodeError:
-                print(current_model_json)
-            print("-" * 50)
 
-        else:
-            # === [尝试 1] ===
-            # 这是第一次尝试，我们不运行 agent.run()，
-            # 我们直接使用用户提供的 'initial_draft_json'
-            print(f"--- [输入] 正在检查初始模型草稿 'draft_model_1s.json' ---")
-            # (current_model_json 已经在循环外被设置为 initial_draft_json)
+        # 2. 保存中间调试用的 SMV 代码
+        iter_smv_filename = f"debug_iter_{attempt + 1}_{paths['smv_file']}"
+        checker.save_debug_smv(current_model_json, iter_smv_filename)
+        print(f"  [调试] 本次迭代的 SMV 代码已保存至: {iter_smv_filename}")
 
-        # === 步骤 3 (执行): 质量检查 ===
+        # 3. 运行质量检查
         print("[模块 3] 运行质量检查...")
         (passed, failure_reason) = checker.check(current_model_json)
 
         if passed:
-            # 成功！
-            print("\n--- 模型验证成功 ---")
+            print("\n--- [SUCCESS] 模型验证通过 ---")
             return ("SUCCESS", current_model_json)
 
-        # === 步骤 4: 准备反馈 (IV.D) ===
-        print(f"--- 质量检查失败 ---")
-        print(f"原因: {failure_reason}")
+        print(f"--- 质量检查失败: {failure_reason} ---")
+        if attempt == config.MAX_ITERATIONS - 1: break
 
-        # 检查是否这是最后一次尝试
-        if attempt == config.MAX_ITERATIONS - 1:
-            break  # 达到最大次数，退出循环
-
-        print("[模块 4] 正在构建反馈提示词...")
+        # 4. 构建反馈
+        print("[模块 4] 构建反馈...")
         feedback_to_agent = construct_feedback_prompt(current_model_json, failure_reason)
-        # 循环将继续，feedback_to_agent 将在下一次 agent.run() 中被使用
 
-    print(f"\n--- 建模失败 (达到最大尝试次数 {config.MAX_ITERATIONS}) ---")
-    return ("FAILURE", "Max attempts reached. Model could not be verified.")
+    return ("FAILURE", "达到最大尝试次数")
 
 
-# --- 主执行 ---
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("input_file", nargs='?', default="input_2.txt", help="原始 OCR 文件")
+    args = parser.parse_args()
+    paths = get_file_paths(args.input_file)
 
-    print("==================================================")
-    print("      启动 LLM 模型修正循环测试脚本      ")
-    print("==================================================")
+    print(f"=== 启动全流程自动化: {paths['raw_input']} ===")
 
-    input_ocr_file = "input_1s.txt"
-    input_draft_file = "draft_model_1s.json"
-
-    # 1. 加载 OCR 文本 (为 Agent 提供上下文)
-    try:
-        with open(input_ocr_file, "r", encoding="utf-8") as f:
-            # 我们不需要运行 extract_device_behavior，
-            # 因为 ReAct Agent 的 prompt 应该使用 *全部* 原始文本
-            ocr_manual_text = f.read()
-        print(f"成功加载 OCR 文本 '{input_ocr_file}' (用于 Agent 上下文).")
-    except FileNotFoundError:
-        print(f"FATAL ERROR: '{input_ocr_file}' 未找到。")
-        print("Agent 需要此文件来进行 'search' 和 'lookup' 以修复模型。")
-        exit(1)
-
-    # 2. 加载初始模型草稿 (作为循环的起点)
-    try:
-        with open(input_draft_file, "r", encoding="utf-8") as f:
-            draft_model_json = f.read()
-        print(f"成功加载初始模型草稿 '{input_draft_file}'.")
-    except FileNotFoundError:
-        print(f"FATAL ERROR: '{input_draft_file}' 未找到。")
-        print("请创建此文件，并填入你希望测试的初步模型 JSON。")
-        exit(1)
-    except json.JSONDecodeError:
-        print(f"FATAL ERROR: '{input_draft_file}' 中的内容不是有效的 JSON。")
-        exit(1)
-
-    # 3. 运行修正流水线
-    (final_status, final_result) = run_correction_pipeline(ocr_manual_text, draft_model_json)
-
-    if final_status == "SUCCESS":
-        print("\n=== 最终验证通过的模型 (JSON) ===")
-        print(final_result)
-
-        output_filename = "verified_model_from_draft.json"
-        try:
-            with open(output_filename, "w", encoding="utf-8") as f:
-                json.dump(json.loads(final_result), f, indent=4, ensure_ascii=False)
-            print(f"\n最终模型已保存到 '{output_filename}'")
-        except Exception as e:
-            print(f"\n保存文件时出错: {e}")
+    # 1. [模块 1] 行为提取
+    behavior_text = ""
+    if os.path.exists(paths['behavior_txt']):
+        print(f"[系统] 检测到已有行为描述 '{paths['behavior_txt']}'，直接加载。")
+        with open(paths['behavior_txt'], "r", encoding="utf-8") as f:
+            behavior_text = f.read()
     else:
-        print(f"\n=== 修正失败 ===")
-        print(final_result)
+        print(f"[模块 1] 正在从 '{paths['raw_input']}' 提取设备行为...")
+        if not os.path.exists(paths['raw_input']):
+            print(f"FATAL: 文件 '{paths['raw_input']}' 未找到。")
+            exit(1)
+
+        with open(paths['raw_input'], "r", encoding="utf-8") as f:
+            raw_ocr = f.read()
+
+        behavior_text = extract_device_behavior(raw_ocr)
+
+        with open(paths['behavior_txt'], "w", encoding="utf-8") as f:
+            f.write(behavior_text)
+        print(f"[模块 1] 提取完成，已保存至 '{paths['behavior_txt']}'")
+
+    # 2. [模块 2] 初始化相关对象
+    print("[模块 2] 初始化 ReAct Agent...")
+    checker = QualityChecker()
+
+    # 3. 生成/加载初始草稿
+    draft_json = ""
+    if os.path.exists(paths['draft_json']):
+        print(f"[系统] 加载已有草稿 '{paths['draft_json']}'...")
+        with open(paths['draft_json'], "r", encoding="utf-8") as f:
+            draft_json = f.read()
+    else:
+        print("[模块 2] 生成初始模型草稿...")
+        # 初始生成不需要 feedback
+        status, result = generate_draft_model(behavior_text, feedback_prompt=None)
+        if status == "ERROR":
+            print(f"FATAL: 初始建模失败: {result}")
+            exit(1)
+        draft_json = result
+        with open(paths['draft_json'], "w", encoding="utf-8") as f:
+            f.write(draft_json)
+
+    # 4. [模块 3 & 4] 运行修正循环
+    # === 关键修改：传入 behavior_text 而不是 agent 对象 ===
+    status, result = run_correction_pipeline(behavior_text, checker, draft_json, paths)
+
+    if status == "SUCCESS":
+        # 5. 保存最终结果
+        try:
+            parsed = json.loads(result)
+            with open(paths['verified_json'], "w", encoding="utf-8") as f:
+                json.dump(parsed, f, indent=4, ensure_ascii=False)
+
+            print(f"[导出] 生成 NuSMV 代码 -> {paths['smv_file']}")
+            checker.save_smv_file(json.dumps(parsed), paths['smv_file'])
+
+            print(f"[可视化] 生成图片 -> {paths['graph_base']}.png")
+            generate_visualization(paths['verified_json'], paths['graph_base'])
+
+            print("\n=== ✅ 全流程执行完毕 ===")
+        except Exception as e:
+            print(f"保存结果时出错: {e}")
+    else:
+        print(f"\n=== ❌ 流程失败: {result} ===")

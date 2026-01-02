@@ -4,65 +4,93 @@ import prompts
 
 def construct_feedback_prompt(model_draft_json: str, failure_reason: str) -> str:
     """
-    当质量检查失败时，构建*增强的*反馈提示词。
-    (基于论文 IV.D 节 和 表IV )
+    当质量检查失败时，构建增强的中文反馈提示词。
+    适配论文定义的 Determinism 和 Clarity 检查。
     """
-    print("[Module 4] Constructing enhanced feedback prompt...")
+    print("[Module 4] 正在构建增强反馈提示词 (Constructing Feedback)...")
 
-    # 从 prompts.py 加载表IV的提示词模板
     prompt_template = prompts.GET_FEEDBACK_PROMPT_TEMPLATE()
 
-    # --- [新逻辑：根据失败类型生成详细指令] ---
+    violated_property = "未知错误 (Unknown Error)"
+    counterexample = "请参考下方的详细错误日志。"
+    enhanced_instructions = "请分析错误日志并修正模型逻辑。"
 
-    violated_property = "Unknown"
-    counterexample = "No counterexample generated."
-    # 这是新增的指导性文本
-    enhanced_instructions = "No specific instructions for this error. Please re-analyze the problem and the model structure."
+    # === 场景 A: NuSMV 验证失败 (CTL 属性违规) ===
+    if "违反属性" in failure_reason or "Violated Property" in failure_reason:
+        try:
+            lines = failure_reason.split('\n')
+            violated_property = lines[0].replace("违反属性 (Violated Property):", "").strip()
+            # 提取 Trace
+            for line in lines:
+                if "反例路径" in line or "Trace" in line:
+                    counterexample = line.replace("反例路径 (Trace):", "").replace("Trace:", "").strip()
 
-    if "Clarity check failed" in failure_reason:
-        # 这是您当前遇到的错误 。
-        violated_property = failure_reason.strip()
-        counterexample = "N/A (This is a structural property, not a path-based one)."
+            if "Resettability" in violated_property:
+                enhanced_instructions = (
+                    "【修复‘可重置性’ (Resettability)】\n"
+                    "反例显示了一条无法回到初始状态的路径。\n"
+                    "**修复方案**：请检查路径末端的状态，确保存在一条能（直接或间接）跳转回初始状态的转换规则。"
+                )
+            elif "Valid_Transition" in violated_property:
+                enhanced_instructions = (
+                    "【修复‘幻觉跳转’ (Invalid Transition)】\n"
+                    "NuSMV 发现模型生成了 JSON 中未定义的非法跳转（通常是隐式自环导致的）。\n"
+                    "**修复方案**：请显式定义该状态在特定输入下的行为。如果不应发生任何动作，请显式添加自环（to: 自身）。"
+                )
+            elif "Reachability" in violated_property:
+                enhanced_instructions = (
+                    "【修复‘连通性’ (Connectivity)】\n"
+                    "检测到不可达状态。\n"
+                    "**修复方案**：请检查该状态的前置条件，确保从初始状态有路可走。"
+                )
+        except Exception as e:
+            print(f"[Feedback] 解析 NuSMV 错误异常: {e}")
 
-        # 为 LLM 提供如何修复“清晰性”错误的明确指令
+    # === 场景 B: 清晰性错误 (Clarity / Input Completeness) [新增] ===
+    elif "清晰性错误" in failure_reason or "Clarity" in failure_reason:
+        violated_property = "输入不完备 (Incomplete Input Handling)"
+        counterexample = failure_reason
         enhanced_instructions = (
-            "To fix 'Clarity': The error message shows a state is 'incomplete'.\n"
-            "You MUST add new transitions for *every single missing input* listed in the error.\n"
-            "If an input should not change the state (e.g., pressing 'home' while 'off'), "
-            "create a *self-loop transition* (e.g., \"from\": \"off\", \"to\": \"off\", \"input\": \"short_press_home\", \"output\": \"none\").\n"
-            "The final model *must* be complete for all states and all inputs."
+            "【修复‘清晰性’ (Clarity)】\n"
+            "根据 Mealy 机定义，每个状态必须对**所有**可能的输入信号都有定义。\n"
+            "错误日志指出了哪些状态漏掉了哪些输入。\n"
+            "**修复方案 (强烈建议)**：\n"
+            "1. 不要为每个状态单独补写逻辑，这会很繁琐。\n"
+            "2. **使用通配符 `*`**：如果某个输入（如 `reset` 或 `timeout`）在大多数状态下行为一致，请添加一条全局规则。\n"
+            "   例如: `{\"from\": \"*\", \"to\": \"off\", \"input\": \"reset\"}`\n"
+            "3. 如果某个输入在该状态下应该被忽略，请添加**自环**：\n"
+            "   例如: `{\"from\": \"state_A\", \"to\": \"state_A\", \"input\": \"irrelevant_input\", \"output\": \"none\"}`"
         )
 
-    elif "Determinism check failed" in failure_reason:
-        # 这是另一种可能的结构错误
-        violated_property = failure_reason.strip()
-        counterexample = "N/A (This is a structural property)."
+    # === 场景 C: 确定性错误 (Determinism) ===
+    elif "确定性错误" in failure_reason or "Determinism" in failure_reason:
+        violated_property = "非确定性冲突 (Non-Determinism)"
+        counterexample = failure_reason
         enhanced_instructions = (
-            "To fix 'Determinism': The error message indicates a state has *conflicting* transitions.\n"
-            "You have defined two or more different transitions for the *exact same (from, input) pair*.\n"
-            "You MUST remove the duplicates or merge them into one single, deterministic transition."
+            "【修复冲突 (Ambiguity)】\n"
+            "同一个状态在同一个输入下，定义了多条不同的跳转路径。\n"
+            "**修复方案**：删除冲突的条目，只保留一条正确的逻辑。"
         )
 
-    elif "Counterexample:" in failure_reason:
-        # 这是 nuXmv/NuSMV 返回的属性错误 (Connectivity, Resettable)
-        parts = failure_reason.split("Counterexample:", 1)
-        violated_property = parts[0].strip()
-        counterexample = parts[1].strip()
+    # === 场景 D: 结构错误 (死锁/孤立) ===
+    elif "结构错误" in failure_reason:
+        violated_property = "图结构缺陷 (Structural Defect)"
+        counterexample = failure_reason
+        if "没有入边" in failure_reason:
+            enhanced_instructions = "【修复孤立状态】：该状态无法到达。请添加指向它的转换。"
+        else:
+            enhanced_instructions = "【修复死锁】：该状态没有出边。请添加跳转规则或自环。"
+
+    # === 场景 E: 语法错误 ===
+    elif "JSON" in failure_reason or "Syntax" in failure_reason or "语法错误" in failure_reason:
+        violated_property = "语法/格式错误 (Syntax Error)"
+        counterexample = failure_reason
         enhanced_instructions = (
-            "To fix this property violation:\n"
-            "You MUST analyze the 'Counterexample' trace. This trace shows an illegal path (e.g., an unreachable state or a state that cannot return to the initial state).\n"
-            "You MUST *add new transitions* (e.g., add a path to the unreachable state) "
-            "or *delete the problematic states/transitions* to ensure the logic is correct."
+            "【修复格式】\n"
+            "生成的模型无法被解析。请检查 JSON 闭合性，并确保变量名不含空字符串或特殊字符。"
         )
 
-    else:
-        # 其他未知错误
-        violated_property = failure_reason.strip()
-
-    # --- [逻辑结束] ---
-
-    # === [已修改] ===
-    # 使用.replace() 来安全地注入所有内容，包括新的“增强指令”
+    # 替换模板变量
     feedback_prompt = prompt_template.replace(
         "{last_model_draft}", model_draft_json
     ).replace(
@@ -70,9 +98,7 @@ def construct_feedback_prompt(model_draft_json: str, failure_reason: str) -> str
     ).replace(
         "{counterexample}", counterexample
     ).replace(
-        "{enhanced_instructions}", enhanced_instructions  # <-- 注入新指令
+        "{enhanced_instructions}", enhanced_instructions
     )
 
     return feedback_prompt
-
-
